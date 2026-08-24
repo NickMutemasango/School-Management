@@ -17,6 +17,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   fees: "Fee Structure",
   enroll: "Enrollment",
   notes: "Class Notes",
+  assignments: "Assignments",
   reports: "End of Term Reports",
   schedule: "Timetable",
 };

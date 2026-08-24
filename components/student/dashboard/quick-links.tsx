@@ -1,6 +1,13 @@
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
-import { ArrowRight, BookOpen, FileText, IdCard, Wallet } from "lucide-react";
+import {
+  ArrowRight,
+  BookOpen,
+  FileText,
+  IdCard,
+  NotebookPen,
+  Wallet,
+} from "lucide-react";
 
 interface QuickLink {
   title: string;
@@ -26,6 +33,13 @@ const LINKS: QuickLink[] = [
     tone: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400",
   },
   {
+    title: "Assignments",
+    description: "Work set by your teachers, and what you've handed in",
+    href: "/student/assignments",
+    icon: NotebookPen,
+    tone: "bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400",
+  },
+  {
     title: "Results",
     description: "Term results and progress across every subject",
     href: "/student/results",
@@ -46,7 +60,8 @@ export function QuickLinks() {
     <section>
       <h2 className="mb-4 font-bold tracking-tight">Quick Links</h2>
 
-      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+      {/* Five tiles: 2 / 3 / 5 across, so the last one is never left orphaned. */}
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {LINKS.map((link) => {
           const Icon = link.icon;
           return (

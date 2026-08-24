@@ -1,17 +1,15 @@
 /**
- * School-wide class levels, in the order the portal lists them.
- * Configuration rather than sample data - shared by Class Notes and
- * End of Term Reports.
+ * School-wide class levels, in the order the portal lists them: ECD, then
+ * primary, then secondary. Configuration rather than sample data - shared by
+ * Class Notes, Assignments, and End of Term Reports.
+ *
+ * NOTE: `lib/data/students.ts` still exports its own identical copy for the
+ * admin directory. The two agree on order as of this change; they should be
+ * collapsed into this module.
  */
 
 export const CLASS_LEVELS = [
   "ECD",
-  "FORM 1",
-  "FORM 2",
-  "FORM 3",
-  "FORM 4",
-  "FORM 5",
-  "FORM 6",
   "GRADE 1",
   "GRADE 2",
   "GRADE 3",
@@ -19,6 +17,12 @@ export const CLASS_LEVELS = [
   "GRADE 5",
   "GRADE 6",
   "GRADE 7",
+  "FORM 1",
+  "FORM 2",
+  "FORM 3",
+  "FORM 4",
+  "FORM 5",
+  "FORM 6",
 ] as const;
 
 export type ClassLevel = (typeof CLASS_LEVELS)[number];

@@ -71,6 +71,12 @@ export const teacherNav: NavSection[] = [
         activePrefixes: ["/teacher/notes"],
       },
       {
+        title: "Assignments",
+        href: "/teacher/assignments",
+        icon: ClipboardList,
+        activePrefixes: ["/teacher/assignments"],
+      },
+      {
         title: "End of Term Reports",
         href: "/teacher/reports",
         icon: FileText,
@@ -101,6 +107,12 @@ export const studentNav: NavSection[] = [
         href: "/student/notes",
         icon: BookOpen,
         activePrefixes: ["/student/notes"],
+      },
+      {
+        title: "Assignments",
+        href: "/student/assignments",
+        icon: NotebookPen,
+        activePrefixes: ["/student/assignments"],
       },
       { title: "Results", href: "/student/results", icon: FileText },
       { title: "Fees", href: "/student/fees", icon: Wallet },
