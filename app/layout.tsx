@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 
+import { BRAND } from "@/lib/brand";
 import "./globals.css";
 
 const inter = Inter({
@@ -10,9 +11,25 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "School Admin — Administration Portal",
-  description:
-    "Administration portal for student management and finance & accounting.",
+  // Every child page sets a bare title; the template appends the wordmark, so
+  // the brand can't be forgotten on a new route.
+  title: {
+    default: `${BRAND.name} — ${BRAND.tagline}`,
+    template: `%s — ${BRAND.name}`,
+  },
+  description: BRAND.description,
+  applicationName: BRAND.name,
+  openGraph: {
+    siteName: BRAND.name,
+    title: `${BRAND.name} — ${BRAND.tagline}`,
+    description: BRAND.description,
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: `${BRAND.name} — ${BRAND.tagline}`,
+    description: BRAND.description,
+  },
 };
 
 /**

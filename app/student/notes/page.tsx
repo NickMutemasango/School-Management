@@ -6,7 +6,7 @@ import { studentNotes } from "@/lib/data/student-notes";
 import { studentProfile } from "@/lib/data/student";
 
 export const metadata: Metadata = {
-  title: "Class Notes — Student Portal",
+  title: "Class Notes · Student Portal",
   description: "Notes and resources shared by your teachers.",
 };
 

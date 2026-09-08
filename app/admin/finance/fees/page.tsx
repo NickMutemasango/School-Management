@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Download, Plus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +23,11 @@ const BANDS = [
   { key: "secondary", label: "Form 1 to 4" },
   { key: "aLevel", label: "Form 5 to 6" },
 ] as const;
+
+export const metadata: Metadata = {
+  title: "Fee Structure · Administration",
+  description: "Per-term fee breakdown across each class band.",
+};
 
 export default function FeeStructurePage() {
   const totals = BANDS.reduce(

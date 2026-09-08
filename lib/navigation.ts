@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import { BRAND } from "@/lib/brand";
 import { studentFullName, studentProfile } from "@/lib/data/student";
 import { teacherProfile } from "@/lib/data/teacher";
 import {
@@ -145,7 +146,7 @@ export const navByPortal: Record<
   { brand: PortalBrand; sections: NavSection[]; user: CurrentUser }
 > = {
   admin: {
-    brand: { title: "School Admin", subtitle: "Super Admin", icon: Building2 },
+    brand: { title: BRAND.name, subtitle: "Super Admin", icon: Building2 },
     sections: adminNav,
     user: {
       name: "Nick Genius",
@@ -154,7 +155,7 @@ export const navByPortal: Record<
     },
   },
   teacher: {
-    brand: { title: "School Admin", subtitle: "Teacher", icon: GraduationCap },
+    brand: { title: BRAND.name, subtitle: "Teacher", icon: GraduationCap },
     sections: teacherNav,
     user: {
       name: teacherProfile.name,
@@ -163,7 +164,7 @@ export const navByPortal: Record<
     },
   },
   student: {
-    brand: { title: "School Admin", subtitle: "Student", icon: ShieldCheck },
+    brand: { title: BRAND.name, subtitle: "Student", icon: ShieldCheck },
     sections: studentNav,
     user: {
       name: studentFullName,

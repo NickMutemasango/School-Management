@@ -5,7 +5,7 @@ import { StudentAssignmentsView } from "@/components/student/assignments/student
 import { studentProfile } from "@/lib/data/student";
 
 export const metadata: Metadata = {
-  title: "Assignments — Student Portal",
+  title: "Assignments · Student Portal",
   description: "Work set by your teachers, and what you've handed in.",
 };
 

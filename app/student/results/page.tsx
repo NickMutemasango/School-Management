@@ -5,7 +5,7 @@ import { ResultsView } from "@/components/student/results/results-view";
 import { termResults } from "@/lib/data/student-results";
 
 export const metadata: Metadata = {
-  title: "Results — Student Portal",
+  title: "Results · Student Portal",
   description: "Your term results and progress across every subject.",
 };
 

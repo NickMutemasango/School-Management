@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import {
   Banknote,
@@ -32,6 +33,11 @@ import {
 } from "@/lib/data/finance";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
+export const metadata: Metadata = {
+  title: "Finance Overview · Administration",
+  description: "Billings, collections, and outstanding fees.",
+};
+
 export default function FinanceOverviewPage() {
   return (
     <>
@@ -60,7 +66,7 @@ export default function FinanceOverviewPage() {
           value={formatCurrency(financeSummary.totalBilled)}
           caption="Invoices issued this term"
           icon={Receipt}
-          tone="bg-blue-50 text-blue-600"
+          tone="blue"
           delta={financeSummary.billedDelta}
         />
         <StatCard
@@ -68,7 +74,7 @@ export default function FinanceOverviewPage() {
           value={formatCurrency(financeSummary.totalCollected)}
           caption="Payments received"
           icon={Banknote}
-          tone="bg-emerald-50 text-emerald-600"
+          tone="emerald"
           delta={financeSummary.collectedDelta}
         />
         <StatCard
@@ -76,7 +82,7 @@ export default function FinanceOverviewPage() {
           value={formatCurrency(financeSummary.outstanding)}
           caption="Awaiting settlement"
           icon={PiggyBank}
-          tone="bg-rose-50 text-rose-600"
+          tone="rose"
           delta={financeSummary.outstandingDelta}
         />
         <StatCard
@@ -84,7 +90,7 @@ export default function FinanceOverviewPage() {
           value={`${financeSummary.collectionRate}%`}
           caption="Collected over billed"
           icon={TrendingUp}
-          tone="bg-amber-50 text-amber-600"
+          tone="amber"
           delta={financeSummary.rateDelta}
         />
       </div>

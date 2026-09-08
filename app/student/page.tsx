@@ -10,7 +10,7 @@ import {
 } from "@/lib/data/student";
 
 export const metadata: Metadata = {
-  title: "Dashboard — Student Portal",
+  title: "Dashboard · Student Portal",
   description: "Your results, notes, and fees at a glance.",
 };
 

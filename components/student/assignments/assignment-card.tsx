@@ -4,12 +4,15 @@ import { ChevronRight, ClipboardList, FileText, Paperclip } from "lucide-react";
 
 import { cn, formatDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { daysUntilDue, dueLabel } from "@/lib/data/assignments";
+import {
+  daysUntilDue,
+  dueLabel,
+  submissionStatusLabel,
+  submissionStatusTone,
+  submissionStatusVariant,
+} from "@/lib/data/assignments";
 import {
   studentAssignmentStatus,
-  studentAssignmentStatusLabel,
-  studentAssignmentStatusTone,
-  studentAssignmentStatusVariant,
   type StudentAssignment,
 } from "@/lib/data/student-assignments";
 
@@ -41,15 +44,15 @@ export function AssignmentCard({
           <div
             className={cn(
               "grid size-11 shrink-0 place-items-center rounded-xl",
-              studentAssignmentStatusTone[status]
+              submissionStatusTone[status]
             )}
           >
             <ClipboardList className="size-5" aria-hidden />
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
-            <Badge variant={studentAssignmentStatusVariant[status]}>
-              {studentAssignmentStatusLabel[status]}
+            <Badge variant={submissionStatusVariant.student[status]}>
+              {submissionStatusLabel.student[status]}
             </Badge>
             <ChevronRight
               aria-hidden

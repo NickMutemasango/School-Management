@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import { Building2 } from "lucide-react";
 
 import { DepartmentGrid } from "@/components/admin/department-grid";
 import { departments } from "@/lib/data/departments";
+
+export const metadata: Metadata = {
+  title: "Departments · Administration",
+  description: "Department landing page for the administration portal.",
+};
 
 export default function AdminDepartmentsPage() {
   const count = departments.length;

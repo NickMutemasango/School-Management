@@ -4,6 +4,8 @@ import type { ReactNode } from "react";
 
 import { Topbar } from "./topbar";
 import { Breadcrumbs } from "./breadcrumbs";
+import { SiteFooter } from "./site-footer";
+import { WatermarkGuard } from "./watermark-guard";
 import { useSidebar } from "./sidebar-provider";
 import { cn } from "@/lib/utils";
 
@@ -23,10 +25,19 @@ export function PortalContent({ children }: { children: ReactNode }) {
     >
       <div className="bg-background min-h-screen">
         <Topbar />
-        <main className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-8 sm:py-8">
+        {/*
+          The watermark is a ::before on this element (see globals.css), not a
+          child node - `relative isolate` there scopes its -z-10 to this well.
+        */}
+        <main
+          data-watermark="nexus"
+          className="nexus-watermark relative isolate mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-8 sm:py-8"
+        >
           <Breadcrumbs />
           {children}
+          <SiteFooter />
         </main>
+        <WatermarkGuard />
       </div>
     </div>
   );

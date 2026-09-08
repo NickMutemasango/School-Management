@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { ScheduleView } from "@/components/teacher/schedule/schedule-view";
 
 export const metadata: Metadata = {
-  title: "Schedule — Teacher Portal",
+  title: "Schedule · Teacher Portal",
   description: "Your weekly teaching timetable.",
 };
 

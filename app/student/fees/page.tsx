@@ -8,7 +8,7 @@ import { PaymentHistoryTable } from "@/components/student/fees/payment-history-t
 import { feeStatement } from "@/lib/data/student-fees";
 
 export const metadata: Metadata = {
-  title: "Fees — Student Portal",
+  title: "Fees · Student Portal",
   description: "Your fee statement, balance, and payment history.",
 };
 

@@ -9,7 +9,7 @@ import {
 import { studentFullName, studentProfile } from "@/lib/data/student";
 
 export const metadata: Metadata = {
-  title: "Personal Details — Student Portal",
+  title: "Personal Details · Student Portal",
   description: "Review and update your contact and guardian information.",
 };
 

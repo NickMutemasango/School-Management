@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { WORDMARK_CLASS } from "@/lib/brand";
 import { navByPortal, type NavItem, type PortalKey } from "@/lib/navigation";
 import { useSidebar } from "./sidebar-provider";
 import { SidebarUser } from "./sidebar-user";
@@ -44,7 +45,13 @@ export function AppSidebar({ portal }: AppSidebarProps) {
             <BrandIcon className="size-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm leading-tight font-bold tracking-tight">
+            {/* Wordmark - the product's logo mark. */}
+            <p
+              className={cn(
+                "truncate text-sm leading-tight",
+                WORDMARK_CLASS
+              )}
+            >
               {brand.title}
             </p>
             <p className="truncate text-[11px] leading-tight text-slate-500 dark:text-slate-400">

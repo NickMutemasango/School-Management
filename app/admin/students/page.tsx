@@ -1,9 +1,15 @@
+import type { Metadata } from "next";
 import { GraduationCap, UserCheck, UserMinus, UserX } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
 import { StudentDirectory } from "@/components/admin/student-directory";
 import { studentStats } from "@/lib/data/students";
+
+export const metadata: Metadata = {
+  title: "Student Directory · Administration",
+  description: "Active, inactive, and deregistered students grouped by class.",
+};
 
 export default function StudentsPage() {
   return (
@@ -19,28 +25,28 @@ export default function StudentsPage() {
           value={String(studentStats.total)}
           caption="All enrollment states"
           icon={GraduationCap}
-          tone="bg-blue-50 text-blue-600"
+          tone="blue"
         />
         <StatCard
           label="Active"
           value={String(studentStats.active)}
           caption="Currently enrolled"
           icon={UserCheck}
-          tone="bg-emerald-50 text-emerald-600"
+          tone="emerald"
         />
         <StatCard
           label="Inactive"
           value={String(studentStats.inactive)}
           caption="Temporarily withdrawn"
           icon={UserMinus}
-          tone="bg-amber-50 text-amber-600"
+          tone="amber"
         />
         <StatCard
           label="Deregistered"
           value={String(studentStats.deregistered)}
           caption="Removed from the register"
           icon={UserX}
-          tone="bg-rose-50 text-rose-600"
+          tone="rose"
         />
       </div>
 

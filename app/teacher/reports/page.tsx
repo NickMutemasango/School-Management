@@ -5,7 +5,7 @@ import { ReportsClassList } from "@/components/teacher/reports/reports-class-lis
 import { reportClasses } from "@/lib/data/teacher-reports";
 
 export const metadata: Metadata = {
-  title: "End of Term Reports — Teacher Portal",
+  title: "End of Term Reports · Teacher Portal",
   description: "Create and edit student reports by class and term.",
 };
 

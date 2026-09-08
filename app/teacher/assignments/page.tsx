@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { AssignmentsView } from "@/components/teacher/assignments/assignments-view";
 
 export const metadata: Metadata = {
-  title: "Assignments — Teacher Portal",
+  title: "Assignments · Teacher Portal",
   description: "Post assignments and review student submissions.",
 };
 

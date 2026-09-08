@@ -1,16 +1,31 @@
 /**
- * Teacher Assignments contract.
+ * Assignments contract.
  *
- * NOTE: unlike every other module in `lib/data/`, this one ships populated
- * mock records. Step 1 is a UI-only build, so the submissions viewer needs
- * something to render. When the backend lands, empty `assignmentsSeed` and
- * replace it with a query keyed by teacher id — the types below are the
- * contract and nothing in `components/teacher/assignments/` reads the seed
- * directly (the page owns it as `useState`).
+ * Types, the shared status vocabulary, and the due-date helpers — no teacher
+ * records, matching the rest of `lib/data/`. Replace `assignmentsSeed` and
+ * `CLASS_SIZES` with backend queries keyed by teacher id; keep the types as
+ * the contract so the upload form and submissions viewer keep compiling.
+ *
+ * The student portal reads the status and date helpers from here too, so the
+ * two sides can't drift — see `student-assignments.ts`, which does still ship
+ * mock records for its own view.
  */
 
-/** Derived from the submitted date vs. the due date - never stored. */
-export type SubmissionStatus = "submitted" | "late" | "missing";
+/**
+ * The one submission-status vocabulary, shared by both portals.
+ *
+ * There are only three underlying facts - handed in on time, handed in after
+ * the deadline, or not handed in - so there is one enum. What the two
+ * audiences call the first state differs (a teacher reads "Not submitted",
+ * the student reads "Pending"), and that split lives in the label/variant
+ * maps below rather than in two competing enums.
+ *
+ * Derived from the submitted date vs. the due date - never stored.
+ */
+export type SubmissionStatus = "pending" | "submitted" | "late";
+
+/** Who is reading the status - selects the wording and badge tone. */
+export type StatusAudience = "teacher" | "student";
 
 export interface Submission {
   id: string;
@@ -36,26 +51,12 @@ export interface Assignment {
 }
 
 /**
- * Mock roster sizes, so the viewer can show "12 of 28 submitted". Replace with
- * a head-count from the class register; unknown levels fall back to the number
- * of submissions actually received.
+ * Roster head-count per class level, so the viewer can show "12 of 28
+ * submitted". Empty until the class register is connected - `classSize`
+ * returns undefined and the viewer falls back to the number of submissions
+ * actually received.
  */
-const CLASS_SIZES: Record<string, number> = {
-  ECD: 22,
-  "GRADE 1": 30,
-  "GRADE 2": 29,
-  "GRADE 3": 33,
-  "GRADE 4": 31,
-  "GRADE 5": 28,
-  "GRADE 6": 27,
-  "GRADE 7": 26,
-  "FORM 1": 35,
-  "FORM 2": 34,
-  "FORM 3": 31,
-  "FORM 4": 28,
-  "FORM 5": 21,
-  "FORM 6": 19,
-};
+const CLASS_SIZES: Record<string, number> = {};
 
 export function classSize(level: string): number | undefined {
   return CLASS_SIZES[level];
@@ -69,45 +70,93 @@ export function submissionStatus(
   submittedOn: string,
   dueOn: string
 ): SubmissionStatus {
-  if (!submittedOn) return "missing";
+  if (!submittedOn) return "pending";
   if (!dueOn) return "submitted";
   return new Date(submittedOn) > new Date(dueOn) ? "late" : "submitted";
 }
 
-export const submissionStatusLabel: Record<SubmissionStatus, string> = {
-  submitted: "Submitted",
-  late: "Late",
-  missing: "Not submitted",
-};
-
-/** Mirrors the mapping style used by `finance.ts` for payment status. */
-export const submissionStatusVariant: Record<
-  SubmissionStatus,
-  "success" | "warning" | "neutral"
+/**
+ * Wording per audience. "Submitted" and "Late" read the same to everyone; only
+ * the not-handed-in state needs different framing - it describes an absence to
+ * the teacher and an outstanding task to the student.
+ */
+export const submissionStatusLabel: Record<
+  StatusAudience,
+  Record<SubmissionStatus, string>
 > = {
-  submitted: "success",
-  late: "warning",
-  missing: "neutral",
+  teacher: {
+    pending: "Not submitted",
+    submitted: "Submitted",
+    late: "Late",
+  },
+  student: {
+    pending: "Pending",
+    submitted: "Submitted",
+    late: "Late",
+  },
 };
 
-export interface SubmissionTally {
+/**
+ * Badge tone per audience. Mirrors the mapping style used by `finance.ts` for
+ * payment status. A missing submission is a neutral absence on the teacher's
+ * register, but an actionable item on the student's own list.
+ */
+export const submissionStatusVariant: Record<
+  StatusAudience,
+  Record<SubmissionStatus, "success" | "warning" | "neutral" | "info">
+> = {
+  teacher: {
+    pending: "neutral",
+    submitted: "success",
+    late: "warning",
+  },
+  student: {
+    pending: "info",
+    submitted: "success",
+    late: "warning",
+  },
+};
+
+/** Icon-chip tones, matching the portals' dashboard tile palette. */
+export const submissionStatusTone: Record<SubmissionStatus, string> = {
+  pending: "bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400",
+  submitted:
+    "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400",
+  late: "bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400",
+};
+
+export interface StatusTally {
+  pending: number;
   submitted: number;
   late: number;
-  missing: number;
+  /** Every status counted. */
+  total: number;
   /** Handed in at all, on time or not. */
   received: number;
 }
 
-export function tallySubmissions(assignment: Assignment): SubmissionTally {
-  const statuses = assignment.submissions.map((s) =>
-    submissionStatus(s.submittedOn, assignment.dueOn)
-  );
-
+/** Counts a list of statuses - both portals tally the same three buckets. */
+export function tallyStatuses(statuses: SubmissionStatus[]): StatusTally {
+  const pending = statuses.filter((s) => s === "pending").length;
   const submitted = statuses.filter((s) => s === "submitted").length;
   const late = statuses.filter((s) => s === "late").length;
-  const missing = statuses.filter((s) => s === "missing").length;
 
-  return { submitted, late, missing, received: submitted + late };
+  return {
+    pending,
+    submitted,
+    late,
+    total: statuses.length,
+    received: submitted + late,
+  };
+}
+
+/** One assignment's submissions, tallied for the teacher's viewer. */
+export function tallySubmissions(assignment: Assignment): StatusTally {
+  return tallyStatuses(
+    assignment.submissions.map((s) =>
+      submissionStatus(s.submittedOn, assignment.dueOn)
+    )
+  );
 }
 
 /** Whole days until the due date; negative once it has passed. */
@@ -135,94 +184,9 @@ export function dueLabel(dueOn: string, now = new Date()): string {
   return `Closed ${Math.abs(days)} days ago`;
 }
 
-/** Mock records for the UI-only build. See the module note above. */
-export const assignmentsSeed: Assignment[] = [
-  {
-    id: "asg_001",
-    title: "Quadratic Equations — Problem Set 4",
-    description:
-      "Complete questions 1 to 15 from the worksheet. Show all working; answers alone will not earn full marks.",
-    classLevel: "FORM 4",
-    dueOn: "2026-08-28",
-    fileName: "problem-set-4.pdf",
-    submissions: [
-      {
-        id: "sub_001",
-        studentName: "Moyo, Tanaka",
-        regNumber: "R261701a",
-        submittedOn: "2026-08-22",
-        fileName: "tanaka-pset4.pdf",
-        fileSizeLabel: "1.2 MB",
-      },
-      {
-        id: "sub_002",
-        studentName: "Ncube, Rutendo",
-        regNumber: "R261702b",
-        submittedOn: "2026-08-23",
-        fileName: "rutendo-pset4.docx",
-        fileSizeLabel: "840 KB",
-      },
-      {
-        id: "sub_003",
-        studentName: "Chikwature, Farai",
-        regNumber: "R261703c",
-        submittedOn: "",
-        fileName: "",
-        fileSizeLabel: "",
-      },
-      {
-        id: "sub_004",
-        studentName: "Sibanda, Nomsa",
-        regNumber: "R261704d",
-        submittedOn: "2026-08-24",
-        fileName: "nomsa-pset4.pdf",
-        fileSizeLabel: "2.1 MB",
-      },
-    ],
-  },
-  {
-    id: "asg_002",
-    title: "Forces and Motion — Lab Report",
-    description:
-      "Write up the trolley-and-ramp experiment from Tuesday's practical. Include your results table, a velocity-time graph, and a short conclusion.",
-    classLevel: "FORM 4",
-    dueOn: "2026-08-18",
-    fileName: "lab-report-template.docx",
-    submissions: [
-      {
-        id: "sub_005",
-        studentName: "Dube, Tapiwa",
-        regNumber: "R261705e",
-        submittedOn: "2026-08-17",
-        fileName: "tapiwa-lab-report.pdf",
-        fileSizeLabel: "3.4 MB",
-      },
-      {
-        id: "sub_006",
-        studentName: "Marange, Kudzai",
-        regNumber: "R261706f",
-        submittedOn: "2026-08-21",
-        fileName: "kudzai-lab-report.pdf",
-        fileSizeLabel: "2.8 MB",
-      },
-      {
-        id: "sub_007",
-        studentName: "Zulu, Anesu",
-        regNumber: "R261707g",
-        submittedOn: "",
-        fileName: "",
-        fileSizeLabel: "",
-      },
-    ],
-  },
-  {
-    id: "asg_003",
-    title: "Photosynthesis — Revision Questions",
-    description:
-      "Answer the ten short-response questions in your exercise book, then photograph the pages and upload them as a single file.",
-    classLevel: "FORM 2",
-    dueOn: "2026-09-04",
-    fileName: "",
-    submissions: [],
-  },
-];
+/**
+ * Assignments set by the signed-in teacher. Empty until a backend is
+ * connected - the viewer renders its empty state, and anything posted through
+ * the form lives in `useState` for the session only.
+ */
+export const assignmentsSeed: Assignment[] = [];

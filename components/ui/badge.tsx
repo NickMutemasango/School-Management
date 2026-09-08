@@ -13,12 +13,18 @@ const badgeVariants = cva(
         accent: "border-transparent bg-accent text-accent-foreground",
         secondary: "border-transparent bg-muted text-foreground",
         outline: "bg-background text-foreground",
-        // Payment / enrollment status tones
-        success: "border-transparent bg-emerald-50 text-emerald-700",
-        warning: "border-transparent bg-amber-50 text-amber-700",
-        danger: "border-transparent bg-rose-50 text-rose-700",
-        info: "border-transparent bg-blue-50 text-blue-700",
-        neutral: "border-transparent bg-slate-100 text-slate-600",
+        // Payment / enrollment / submission status tones. The dark pairs
+        // follow the icon-chip convention used across the portals'
+        // dashboards: a deep tinted ground with a light-400 label.
+        success:
+          "border-transparent bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400",
+        warning:
+          "border-transparent bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400",
+        danger:
+          "border-transparent bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400",
+        info: "border-transparent bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400",
+        neutral:
+          "border-transparent bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
       },
     },
     defaultVariants: {

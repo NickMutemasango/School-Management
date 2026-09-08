@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { NotesClassList } from "@/components/teacher/notes/notes-class-list";
 
 export const metadata: Metadata = {
-  title: "Class Notes — Teacher Portal",
+  title: "Class Notes · Teacher Portal",
   description: "Upload and manage teaching notes by class.",
 };
 

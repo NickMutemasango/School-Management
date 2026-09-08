@@ -8,21 +8,38 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { AssignmentCard } from "./assignment-card";
 import { SubmissionDialog } from "./submission-dialog";
 import {
+  submissionStatusLabel,
+  type StatusTally,
+  type SubmissionStatus,
+} from "@/lib/data/assignments";
+import {
   studentAssignmentStatus,
   studentAssignmentsSeed,
   tallyByStatus,
   type StudentAssignment,
-  type StudentAssignmentStatus,
   type StudentSubmission,
 } from "@/lib/data/student-assignments";
 
-type Filter = StudentAssignmentStatus | "all";
+type Filter = SubmissionStatus | "all";
 
-const FILTERS: Array<{ value: Filter; label: string }> = [
-  { value: "all", label: "All" },
-  { value: "pending", label: "Pending" },
-  { value: "submitted", label: "Submitted" },
-  { value: "late", label: "Late" },
+/** `countKey` maps each tab onto its bucket in the shared tally. */
+const FILTERS: Array<{
+  value: Filter;
+  label: string;
+  countKey: keyof StatusTally;
+}> = [
+  { value: "all", label: "All", countKey: "total" },
+  {
+    value: "pending",
+    label: submissionStatusLabel.student.pending,
+    countKey: "pending",
+  },
+  {
+    value: "submitted",
+    label: submissionStatusLabel.student.submitted,
+    countKey: "submitted",
+  },
+  { value: "late", label: submissionStatusLabel.student.late, countKey: "late" },
 ];
 
 /**
@@ -94,7 +111,7 @@ export function StudentAssignmentsView() {
                   : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
               )}
             >
-              {tally[f.value]}
+              {tally[f.countKey]}
             </span>
           </button>
         ))}

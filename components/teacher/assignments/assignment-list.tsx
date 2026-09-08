@@ -91,8 +91,10 @@ function AssignmentRow({
   const isUrgent = days !== null && days >= 0 && days <= 1;
 
   const panelId = `${assignment.id}-submissions`;
-  const expected =
-    classSize(assignment.classLevel) ?? assignment.submissions.length;
+  // Undefined until the class register is connected. Without a roster there is
+  // no meaningful denominator, so the count is shown on its own rather than as
+  // a misleading "0 of 0".
+  const roster = classSize(assignment.classLevel);
 
   return (
     <div className="bg-background overflow-hidden rounded-xl border border-slate-200 shadow-sm transition-shadow hover:shadow-md dark:border-slate-800">
@@ -140,10 +142,18 @@ function AssignmentRow({
 
           <span className="hidden shrink-0 items-center gap-1.5 text-sm text-slate-500 sm:flex dark:text-slate-400">
             <Users className="size-4 shrink-0" aria-hidden />
-            <span className="tabular-nums">
-              {tally.received} of {expected}
-            </span>
-            <span className="sr-only">submissions received</span>
+            {roster === undefined ? (
+              <span className="tabular-nums">
+                {tally.received} submission{tally.received === 1 ? "" : "s"}
+              </span>
+            ) : (
+              <>
+                <span className="tabular-nums">
+                  {tally.received} of {roster}
+                </span>
+                <span className="sr-only">submissions received</span>
+              </>
+            )}
           </span>
 
           {tally.late > 0 && (
@@ -190,7 +200,7 @@ function AssignmentRow({
             </div>
             <div className="flex items-center gap-2">
               <dt className="text-slate-500 dark:text-slate-400">Outstanding</dt>
-              <dd className="font-medium tabular-nums">{tally.missing}</dd>
+              <dd className="font-medium tabular-nums">{tally.pending}</dd>
             </div>
           </dl>
 
@@ -218,7 +228,7 @@ function AssignmentRow({
                     submission.submittedOn,
                     assignment.dueOn
                   );
-                  const handedIn = status !== "missing";
+                  const handedIn = status !== "pending";
 
                   return (
                     <TableRow key={submission.id}>
@@ -250,8 +260,8 @@ function AssignmentRow({
                       </TableCell>
 
                       <TableCell>
-                        <Badge variant={submissionStatusVariant[status]}>
-                          {submissionStatusLabel[status]}
+                        <Badge variant={submissionStatusVariant.teacher[status]}>
+                          {submissionStatusLabel.teacher[status]}
                         </Badge>
                       </TableCell>
 

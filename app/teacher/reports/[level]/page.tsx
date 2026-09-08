@@ -20,8 +20,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const level = levelFromSlug(slug);
   return {
     title: level
-      ? `${level} Reports — Teacher Portal`
-      : "Class Reports — Teacher Portal",
+      ? `${level} Reports · Teacher Portal`
+      : "Class Reports · Teacher Portal",
   };
 }
 

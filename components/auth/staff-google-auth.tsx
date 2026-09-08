@@ -36,9 +36,10 @@ function TabPill({ value, label }: { value: string; label: string }) {
       value={value}
       className={cn(
         "flex-1 rounded-lg px-3.5 py-2 text-sm font-semibold transition-all outline-none",
-        "text-slate-500 hover:text-slate-800",
+        "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100",
         "focus-visible:ring-2 focus-visible:ring-blue-500/30",
-        "data-[state=active]:bg-white data-[state=active]:text-slate-800 data-[state=active]:shadow-sm"
+        "data-[state=active]:bg-white data-[state=active]:text-slate-800 data-[state=active]:shadow-sm",
+        "dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:text-slate-100"
       )}
     >
       {label}
@@ -56,7 +57,7 @@ export function StaffGoogleAuth() {
     <Tabs.Root defaultValue="signin" className="space-y-6">
       <Tabs.List
         aria-label="Staff account options"
-        className="flex gap-1 rounded-xl bg-slate-100 p-1.5"
+        className="flex gap-1 rounded-xl bg-slate-100 p-1.5 dark:bg-slate-800"
       >
         <TabPill value="signin" label="Sign In" />
         <TabPill value="signup" label="Sign Up" />
@@ -74,7 +75,7 @@ export function StaffGoogleAuth() {
           <ArrowRight className="size-4" aria-hidden />
         </button>
 
-        <p className="text-center text-sm text-slate-500">
+        <p className="text-center text-sm text-slate-500 dark:text-slate-400">
           Use the Google account issued by the institute.
         </p>
       </Tabs.Content>
@@ -82,14 +83,14 @@ export function StaffGoogleAuth() {
       <Tabs.Content value="signup" className="space-y-4 outline-none">
         <button
           type="button"
-          className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-300 bg-white/70 px-4 py-3 font-semibold text-slate-700 shadow-sm backdrop-blur-sm transition-all duration-200 hover:border-slate-400 hover:bg-white hover:shadow-md focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:ring-offset-2 focus-visible:outline-none"
+          className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-300 bg-white/70 px-4 py-3 font-semibold text-slate-700 shadow-sm backdrop-blur-sm transition-all duration-200 hover:border-slate-400 hover:bg-white hover:shadow-md focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:ring-offset-2 focus-visible:outline-none dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-800 dark:focus-visible:ring-offset-slate-900"
         >
           <GoogleMark className="size-5 shrink-0" />
           Sign up with Google
           <UserPlus className="size-4" aria-hidden />
         </button>
 
-        <p className="text-center text-sm text-slate-500">
+        <p className="text-center text-sm text-slate-500 dark:text-slate-400">
           A portal administrator approves new staff accounts before access is
           granted.
         </p>

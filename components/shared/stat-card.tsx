@@ -3,6 +3,23 @@ import type { LucideIcon } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
+/**
+ * Icon-chip palette. Named rather than a free-form class string so a call site
+ * can't ship a light-only chip - every tone carries its dark pair here, once.
+ * Matches the tile palette used by the student and teacher dashboards.
+ */
+const TONES = {
+  blue: "bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400",
+  emerald:
+    "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400",
+  amber: "bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400",
+  rose: "bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400",
+  violet:
+    "bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-400",
+} as const;
+
+export type StatTone = keyof typeof TONES;
+
 interface StatCardProps {
   label: string;
   value: string;
@@ -12,8 +29,8 @@ interface StatCardProps {
   delta?: number;
   deltaLabel?: string;
   icon: LucideIcon;
-  /** Tailwind classes for the icon chip, e.g. "bg-blue-50 text-blue-600". */
-  tone?: string;
+  /** Icon-chip colour. */
+  tone?: StatTone;
 }
 
 export function StatCard({
@@ -23,7 +40,7 @@ export function StatCard({
   delta,
   deltaLabel = "from last period",
   icon: Icon,
-  tone = "bg-blue-50 text-blue-600",
+  tone = "blue",
 }: StatCardProps) {
   return (
     <Card className="gap-0 p-6 shadow-sm transition-shadow hover:shadow-md">
@@ -34,7 +51,12 @@ export function StatCard({
             <p className="text-muted-foreground mt-0.5 truncate text-sm">{caption}</p>
           )}
         </div>
-        <div className={cn("grid size-11 shrink-0 place-items-center rounded-xl", tone)}>
+        <div
+          className={cn(
+            "grid size-11 shrink-0 place-items-center rounded-xl",
+            TONES[tone]
+          )}
+        >
           <Icon className="size-5" />
         </div>
       </div>

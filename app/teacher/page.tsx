@@ -6,7 +6,7 @@ import { TodaysSchedule } from "@/components/teacher/dashboard/todays-schedule";
 import { teacherProfile, teacherStats, todaysSchedule } from "@/lib/data/teacher";
 
 export const metadata: Metadata = {
-  title: "Dashboard — Teacher Portal",
+  title: "Dashboard · Teacher Portal",
   description: "Your teaching day at a glance.",
 };
 

@@ -2,16 +2,22 @@
  * Student-side view of Assignments.
  *
  * The teacher sets work against a class and sees every student's submission;
- * the student sees only their own. Both sides share the due-date helpers in
- * `assignments.ts` so "Due in 3 days" can't mean two different things - the
- * same split `notes.ts` uses for Class Notes.
+ * the student sees only their own. Both sides share the status enum, the
+ * derivation, and the due-date helpers in `assignments.ts`, so "Late" and
+ * "Due in 3 days" can't mean two different things across the portals - the
+ * same split `notes.ts` uses for Class Notes. Only the wording and badge tone
+ * differ, and those are audience-keyed maps in that shared module.
  *
  * NOTE: ships populated mock records for the UI-only build. Replace
  * `studentAssignmentsSeed` with a query scoped to the signed-in student.
  */
 
-/** What the student sees on their own work. */
-export type StudentAssignmentStatus = "pending" | "submitted" | "late";
+import {
+  submissionStatus,
+  tallyStatuses,
+  type StatusTally,
+  type SubmissionStatus,
+} from "./assignments";
 
 export interface StudentSubmission {
   fileName: string;
@@ -37,49 +43,17 @@ export interface StudentAssignment {
 }
 
 /**
- * Derived, never stored - a submission dated after the deadline is late no
- * matter what a record claims.
+ * The student's own status for one assignment, using the shared derivation so
+ * "late" can't mean one thing here and another on the teacher's register.
  */
 export function studentAssignmentStatus(
   assignment: StudentAssignment
-): StudentAssignmentStatus {
-  const { submission, dueOn } = assignment;
-  if (!submission) return "pending";
-  if (!dueOn) return "submitted";
-  return new Date(submission.submittedOn) > new Date(dueOn)
-    ? "late"
-    : "submitted";
+): SubmissionStatus {
+  return submissionStatus(
+    assignment.submission?.submittedOn ?? "",
+    assignment.dueOn
+  );
 }
-
-export const studentAssignmentStatusLabel: Record<
-  StudentAssignmentStatus,
-  string
-> = {
-  pending: "Pending",
-  submitted: "Submitted",
-  late: "Late",
-};
-
-/** Mirrors the mapping style used by `finance.ts` for payment status. */
-export const studentAssignmentStatusVariant: Record<
-  StudentAssignmentStatus,
-  "info" | "success" | "warning"
-> = {
-  pending: "info",
-  submitted: "success",
-  late: "warning",
-};
-
-/** Icon-chip tones, matching the student dashboard's tile palette. */
-export const studentAssignmentStatusTone: Record<
-  StudentAssignmentStatus,
-  string
-> = {
-  pending: "bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400",
-  submitted:
-    "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400",
-  late: "bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400",
-};
 
 /** "1.2 MB" - the picker gives real byte counts, so format them properly. */
 export function formatFileSize(bytes: number): string {
@@ -89,21 +63,9 @@ export function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export interface StatusTally {
-  all: number;
-  pending: number;
-  submitted: number;
-  late: number;
-}
-
+/** The student's list, tallied into the shared three buckets. */
 export function tallyByStatus(assignments: StudentAssignment[]): StatusTally {
-  const statuses = assignments.map(studentAssignmentStatus);
-  return {
-    all: assignments.length,
-    pending: statuses.filter((s) => s === "pending").length,
-    submitted: statuses.filter((s) => s === "submitted").length,
-    late: statuses.filter((s) => s === "late").length,
-  };
+  return tallyStatuses(assignments.map(studentAssignmentStatus));
 }
 
 /** Mock records for the UI-only build. See the module note above. */
