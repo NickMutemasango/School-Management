@@ -5,9 +5,9 @@ import { Bell, Menu } from "lucide-react";
 import { UserMenu } from "./user-menu";
 import { ThemeToggle } from "./theme-toggle";
 import { useSidebar } from "./sidebar-provider";
-import { notificationCount } from "@/lib/navigation";
+import { notificationCount, type CurrentUser } from "@/lib/navigation";
 
-export function Topbar() {
+export function Topbar({ user }: { user: CurrentUser | null }) {
   const { toggle } = useSidebar();
 
   return (
@@ -35,7 +35,7 @@ export function Topbar() {
 
         <ThemeToggle />
 
-        <UserMenu />
+        <UserMenu user={user} />
       </div>
     </header>
   );

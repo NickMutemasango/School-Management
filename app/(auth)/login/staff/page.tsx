@@ -1,17 +1,23 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Briefcase, Shield } from "lucide-react";
+import { AlertCircle, Briefcase, Shield } from "lucide-react";
 
 import { BRAND, WORDMARK_CLASS } from "@/lib/brand";
 
-import { StaffGoogleAuth } from "@/components/auth/staff-google-auth";
+import { StaffAuth } from "@/components/auth/staff-auth";
 
 export const metadata: Metadata = {
   title: "Staff Sign In",
-  description: "Sign in with Google to access the staff portal.",
+  description: "Sign in to access the staff portal.",
 };
 
-export default function StaffLoginPage() {
+export default async function StaffLoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string; error?: string }>;
+}) {
+  const { next, error } = await searchParams;
+
   return (
     <div className="bg-background flex min-h-screen items-center justify-center px-4 py-10">
       <div className="mx-auto w-full max-w-md">
@@ -25,13 +31,22 @@ export default function StaffLoginPage() {
           <p className={`mb-2 text-xs text-slate-400 dark:text-slate-500 ${WORDMARK_CLASS}`}>{BRAND.name}</p>
           <h1 className="mb-2 text-3xl font-bold text-slate-800 dark:text-slate-100">Staff Portal</h1>
           <p className="text-slate-600 dark:text-slate-300">
-            Continue with your institute Google account
+            Continue with Google, or your email and password
           </p>
         </div>
 
         {/* Sign-in / sign-up card */}
         <div className="rounded-2xl border border-slate-200/60 bg-white/80 p-8 shadow-2xl backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/80">
-          <StaffGoogleAuth />
+          {error && (
+            <p
+              role="alert"
+              className="mb-6 flex items-center gap-2 rounded-xl bg-red-50 p-3 text-sm font-medium text-red-700 dark:bg-red-950/50 dark:text-red-400"
+            >
+              <AlertCircle className="size-4 shrink-0" aria-hidden />
+              Something went wrong signing in with Google. Please try again.
+            </p>
+          )}
+          <StaffAuth next={next} />
         </div>
 
         {/* Trust badge */}
@@ -46,7 +61,7 @@ export default function StaffLoginPage() {
         <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
           Student?{" "}
           <Link
-            href="/login/student"
+            href={`/login/student${next ? `?next=${encodeURIComponent(next)}` : ""}`}
             className="font-semibold text-blue-600 underline-offset-4 dark:text-blue-400 hover:underline focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:outline-none"
           >
             Sign in here

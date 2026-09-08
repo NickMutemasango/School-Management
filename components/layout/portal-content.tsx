@@ -8,12 +8,18 @@ import { SiteFooter } from "./site-footer";
 import { WatermarkGuard } from "./watermark-guard";
 import { useSidebar } from "./sidebar-provider";
 import { cn } from "@/lib/utils";
+import type { CurrentUser } from "@/lib/navigation";
+
+interface PortalContentProps {
+  children: ReactNode;
+  user: CurrentUser | null;
+}
 
 /**
  * Content well beside the sidebar. Reads the collapse state so the desktop
  * offset tracks whether the sidebar rail is showing.
  */
-export function PortalContent({ children }: { children: ReactNode }) {
+export function PortalContent({ children, user }: PortalContentProps) {
   const { collapsed } = useSidebar();
 
   return (
@@ -24,7 +30,7 @@ export function PortalContent({ children }: { children: ReactNode }) {
       )}
     >
       <div className="bg-background min-h-screen">
-        <Topbar />
+        <Topbar user={user} />
         {/*
           The watermark is a ::before on this element (see globals.css), not a
           child node - `relative isolate` there scopes its -z-10 to this well.

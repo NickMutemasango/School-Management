@@ -28,7 +28,6 @@ import {
   CLASS_LEVELS,
   enrollmentStatusLabel,
   enrollmentStatusVariant,
-  students,
   type EnrollmentStatus,
   type Student,
 } from "@/lib/data/students";
@@ -41,7 +40,7 @@ const STATUS_FILTERS: Array<{ value: EnrollmentStatus | "all"; label: string }> 
   { value: "deregistered", label: "Deregistered" },
 ];
 
-export function StudentDirectory() {
+export function StudentDirectory({ students }: { students: Student[] }) {
   const [query, setQuery] = React.useState("");
   const [classLevel, setClassLevel] = React.useState<string>("ALL");
   const [status, setStatus] = React.useState<EnrollmentStatus | "all">("all");

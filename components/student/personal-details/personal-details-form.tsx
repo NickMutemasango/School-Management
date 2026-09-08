@@ -7,7 +7,9 @@ import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import { FormSection } from "@/components/shared/form-section";
 import { SaveButton } from "@/components/shared/save-button";
+import { DateSelectField } from "@/components/shared/date-select-field";
 import type { StudentProfile } from "@/lib/data/student";
+import { updateOwnProfile } from "@/app/student/personal-details/actions";
 
 /** The subset of the profile a student may edit themselves. */
 type EditableProfile = Pick<
@@ -72,6 +74,7 @@ export function PersonalDetailsForm({ profile }: { profile: StudentProfile }) {
   const [saved, setSaved] = React.useState<EditableProfile>(initial);
   const [errors, setErrors] = React.useState<FieldErrors>({});
   const [submitted, setSubmitted] = React.useState(false);
+  const [saveError, setSaveError] = React.useState<string | null>(null);
 
   const isDirty = (Object.keys(form) as (keyof EditableProfile)[]).some(
     (k) => form[k] !== saved[k]
@@ -85,12 +88,20 @@ export function PersonalDetailsForm({ profile }: { profile: StudentProfile }) {
     if (submitted) setErrors(validate(next));
   }
 
-  function handleSave() {
+  async function handleSave() {
     setSubmitted(true);
     const found = validate(form);
     setErrors(found);
     if (Object.keys(found).length > 0) return;
-    setSaved(form);
+
+    try {
+      await updateOwnProfile(form);
+      setSaved(form);
+      setSaveError(null);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Could not save changes.");
+      throw err; // tells SaveButton not to mark this as saved
+    }
   }
 
   function handleCancel() {
@@ -110,6 +121,15 @@ export function PersonalDetailsForm({ profile }: { profile: StudentProfile }) {
         >
           <AlertCircle className="size-4 shrink-0" />
           Fix the highlighted fields before saving.
+        </p>
+      )}
+      {!hasErrors && saveError && (
+        <p
+          role="alert"
+          className="mr-auto flex items-center gap-1.5 text-sm font-medium text-red-600"
+        >
+          <AlertCircle className="size-4 shrink-0" />
+          {saveError}
         </p>
       )}
       <button
@@ -172,12 +192,12 @@ export function PersonalDetailsForm({ profile }: { profile: StudentProfile }) {
             error={errors.phone}
             onChange={(v) => update("phone", v)}
           />
-          <Field
+          <DateSelectField
             id="dateOfBirth"
             label="Date of Birth"
-            type="date"
             value={form.dateOfBirth}
             onChange={(v) => update("dateOfBirth", v)}
+            minYear={new Date().getFullYear() - 25}
           />
 
           <div className="grid gap-2">

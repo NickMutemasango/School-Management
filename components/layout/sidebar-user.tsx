@@ -11,15 +11,22 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { navByPortal, type PortalKey } from "@/lib/navigation";
+import type { CurrentUser, PortalKey } from "@/lib/navigation";
 import { initials } from "@/lib/utils";
+import { signOut } from "@/app/(auth)/actions";
 
 /** Profile card pinned to the bottom of the sidebar. */
-export function SidebarUser({ portal }: { portal: PortalKey }) {
-  const currentUser = navByPortal[portal].user;
+export function SidebarUser({
+  portal,
+  user,
+}: {
+  portal: PortalKey;
+  user: CurrentUser | null;
+}) {
   // Only the admin portal has a settings route; other portals show sign-out only.
   const settingsHref = portal === "admin" ? "/admin/settings" : null;
-  const isSignedIn = currentUser.name !== "";
+  const isSignedIn = user !== null;
+  const currentUser = user ?? { name: "", email: "", role: "" };
 
   return (
     <div className="shrink-0 border-t border-slate-200 p-2.5 dark:border-slate-800">
@@ -67,10 +74,12 @@ export function SidebarUser({ portal }: { portal: PortalKey }) {
             </>
           )}
           <DropdownMenuItem variant="destructive" asChild>
-            <Link href="/login">
-              <LogOut className="size-4" />
-              Sign out
-            </Link>
+            <form action={signOut}>
+              <button type="submit" className="flex w-full items-center gap-2">
+                <LogOut className="size-4" />
+                Sign out
+              </button>
+            </form>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

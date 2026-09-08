@@ -6,9 +6,9 @@ import { CheckCircle2, Loader2, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * Save control with an idle -> saving -> saved lifecycle. Disabled while there
- * is nothing to save. `onSave` runs once the simulated request resolves and
- * should commit the form's snapshot.
+ * Save control with an idle -> saving -> saved lifecycle. Disabled while
+ * there is nothing to save. `onSave` should perform the persist request
+ * itself (and swallow/report its own errors - this button just awaits it).
  */
 export function SaveButton({
   isDirty,
@@ -16,7 +16,7 @@ export function SaveButton({
   label = "Save changes",
 }: {
   isDirty: boolean;
-  onSave: () => void;
+  onSave: () => void | Promise<void>;
   label?: string;
 }) {
   const [isSaving, setIsSaving] = React.useState(false);
@@ -24,16 +24,20 @@ export function SaveButton({
 
   async function handleClick() {
     setIsSaving(true);
-    // No backend yet - stand in for the persist request.
-    await new Promise((resolve) => setTimeout(resolve, 700));
-    onSave();
-    setSavedAt(
-      new Date().toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-      })
-    );
-    setIsSaving(false);
+    try {
+      await onSave();
+      setSavedAt(
+        new Date().toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+        })
+      );
+    } catch {
+      // onSave is responsible for surfacing its own error state - a thrown
+      // error here just means "don't mark this as saved."
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (

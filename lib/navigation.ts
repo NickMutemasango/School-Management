@@ -175,12 +175,5 @@ export const navByPortal: Record<
   },
 };
 
-/**
- * Signed-in user shown in the sidebar footer and header avatar.
- * Placeholder values until an auth provider is wired up - prefer
- * `navByPortal[portal].user` so each portal shows its own identity.
- */
-export const currentUser: CurrentUser = navByPortal.admin.user;
-
 /** Unread notification count on the header bell. */
 export const notificationCount = 3;

@@ -1,10 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
-import { AlertCircle, ArrowRight, Loader2, Shield, User } from "lucide-react";
+import { useActionState } from "react";
+import { AlertCircle, ArrowRight, Loader2, Lock, Shield, User } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { signInStudent, type StudentLoginState } from "@/app/(auth)/login/student/actions";
 
 /**
  * Permissive enough for both hyphenated formats (REG-2024-0012) and the
@@ -24,47 +25,43 @@ function validate(value: string): string | null {
   return null;
 }
 
-export function StudentLoginForm() {
-  const router = useRouter();
+const initialState: StudentLoginState = { error: null };
+
+export function StudentLoginForm({ next }: { next?: string }) {
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   const [regNumber, setRegNumber] = React.useState("");
-  const [error, setError] = React.useState<string | null>(null);
+  const [regError, setRegError] = React.useState<string | null>(null);
   const [submitted, setSubmitted] = React.useState(false);
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [state, formAction, isLoading] = useActionState(
+    signInStudent,
+    initialState
+  );
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const next = e.target.value;
-    setRegNumber(next);
+    const value = e.target.value;
+    setRegNumber(value);
     // Re-validate live only after the first submit attempt, so the field
     // doesn't turn red while the student is still typing.
-    if (submitted) setError(validate(next));
+    if (submitted) setRegError(validate(value));
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     setSubmitted(true);
 
     const validationError = validate(regNumber);
     if (validationError) {
-      setError(validationError);
+      e.preventDefault();
+      setRegError(validationError);
       inputRef.current?.focus();
-      return;
     }
-
-    setError(null);
-    setIsLoading(true);
-
-    // No auth backend yet - stand in for the sign-in request, then hand off
-    // to the student dashboard. Replace with the real call when it lands.
-    await new Promise((resolve) => setTimeout(resolve, 900));
-    router.push("/student");
   }
 
-  const hasError = Boolean(error);
+  const hasRegError = Boolean(regError);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+    <form action={formAction} onSubmit={handleSubmit} className="space-y-6" noValidate>
+      {next && <input type="hidden" name="next" value={next} />}
       <div className="space-y-4">
         <div className="space-y-2">
           <label
@@ -88,29 +85,68 @@ export function StudentLoginForm() {
               value={regNumber}
               onChange={handleChange}
               placeholder="Enter your registration number"
-              aria-invalid={hasError}
-              aria-describedby={hasError ? "regNumber-error" : undefined}
+              aria-invalid={hasRegError}
+              aria-describedby={hasRegError ? "regNumber-error" : undefined}
               className={cn(
                 "flex w-full rounded-xl border bg-white/70 px-4 py-3 text-lg backdrop-blur-sm transition-colors outline-none dark:bg-slate-800/60",
                 "placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50",
-                hasError
+                hasRegError
                   ? "border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
                   : "border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700"
               )}
             />
           </div>
 
-          {hasError && (
+          {hasRegError && (
             <p
               id="regNumber-error"
               role="alert"
               className="flex items-start gap-1.5 text-sm font-medium text-red-600 dark:text-red-400"
             >
               <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
-              {error}
+              {regError}
             </p>
           )}
         </div>
+
+        <div className="space-y-2">
+          <label
+            htmlFor="password"
+            className="flex items-center gap-2 text-sm leading-none font-semibold text-slate-700 dark:text-slate-300"
+          >
+            <Lock className="size-4" aria-hidden />
+            Password
+          </label>
+
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            disabled={isLoading}
+            placeholder="Enter your password"
+            required
+            className={cn(
+              "flex w-full rounded-xl border bg-white/70 px-4 py-3 text-lg backdrop-blur-sm transition-colors outline-none dark:bg-slate-800/60",
+              "placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50",
+              "border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700"
+            )}
+          />
+
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Given to you by the school office when you enrolled.
+          </p>
+        </div>
+
+        {state.error && (
+          <p
+            role="alert"
+            className="flex items-start gap-1.5 text-sm font-medium text-red-600 dark:text-red-400"
+          >
+            <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
+            {state.error}
+          </p>
+        )}
       </div>
 
       <div className="space-y-4">
