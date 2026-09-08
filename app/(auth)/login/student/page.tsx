@@ -11,7 +11,13 @@ export const metadata: Metadata = {
   description: "Sign in to access your student portal.",
 };
 
-export default function StudentLoginPage() {
+export default async function StudentLoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next } = await searchParams;
+
   return (
     <div className="bg-background flex min-h-screen items-center justify-center px-4 py-10">
       <div className="mx-auto w-full max-w-md">
@@ -29,7 +35,7 @@ export default function StudentLoginPage() {
 
         {/* Sign-in card */}
         <div className="rounded-2xl border border-slate-200/60 bg-white/80 p-8 shadow-2xl backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/80">
-          <StudentLoginForm />
+          <StudentLoginForm next={next} />
         </div>
 
         {/* Trust badge */}
@@ -44,7 +50,7 @@ export default function StudentLoginPage() {
         <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
           Staff member?{" "}
           <Link
-            href="/login/staff"
+            href={`/login/staff${next ? `?next=${encodeURIComponent(next)}` : ""}`}
             className="font-semibold text-blue-600 underline-offset-4 dark:text-blue-400 hover:underline focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:outline-none"
           >
             Sign in here

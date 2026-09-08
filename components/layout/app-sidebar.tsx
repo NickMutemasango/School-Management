@@ -6,15 +6,16 @@ import { X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { WORDMARK_CLASS } from "@/lib/brand";
-import { navByPortal, type NavItem, type PortalKey } from "@/lib/navigation";
+import { navByPortal, type CurrentUser, type NavItem, type PortalKey } from "@/lib/navigation";
 import { useSidebar } from "./sidebar-provider";
 import { SidebarUser } from "./sidebar-user";
 
 interface AppSidebarProps {
   portal: PortalKey;
+  user: CurrentUser | null;
 }
 
-export function AppSidebar({ portal }: AppSidebarProps) {
+export function AppSidebar({ portal, user }: AppSidebarProps) {
   const { brand, sections } = navByPortal[portal];
   const { openMobile, setOpenMobile, collapsed } = useSidebar();
   const BrandIcon = brand.icon;
@@ -88,7 +89,7 @@ export function AppSidebar({ portal }: AppSidebarProps) {
         </nav>
 
         {/* User profile card */}
-        <SidebarUser portal={portal} />
+        <SidebarUser portal={portal} user={user} />
       </aside>
     </>
   );

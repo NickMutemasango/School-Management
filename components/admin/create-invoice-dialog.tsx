@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { DateSelectField } from "@/components/shared/date-select-field";
 import {
   Select,
   SelectContent,
@@ -111,15 +112,20 @@ export function CreateInvoiceDialog({ children }: { children?: React.ReactNode }
             </Select>
           </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="issuedOn">Issue Date</Label>
-            <Input id="issuedOn" type="date" />
-          </div>
+          <DateSelectField
+            id="issuedOn"
+            label="Issue Date"
+            defaultValue={new Date().toISOString().slice(0, 10)}
+            minYear={new Date().getFullYear() - 1}
+            maxYear={new Date().getFullYear()}
+          />
 
-          <div className="grid gap-2">
-            <Label htmlFor="dueOn">Due Date</Label>
-            <Input id="dueOn" type="date" />
-          </div>
+          <DateSelectField
+            id="dueOn"
+            label="Due Date"
+            minYear={new Date().getFullYear()}
+            maxYear={new Date().getFullYear() + 1}
+          />
         </div>
 
         <Separator />

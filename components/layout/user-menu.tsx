@@ -11,11 +11,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { currentUser } from "@/lib/navigation";
+import type { CurrentUser } from "@/lib/navigation";
 import { initials } from "@/lib/utils";
+import { signOut } from "@/app/(auth)/actions";
 
 /** Compact avatar pill in the header bar. */
-export function UserMenu() {
+export function UserMenu({ user }: { user: CurrentUser | null }) {
+  const currentUser = user ?? { name: "Not signed in", email: "No account connected", role: "" };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="ml-1 flex items-center gap-1 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40">
@@ -45,10 +48,12 @@ export function UserMenu() {
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" asChild>
-          <Link href="/login">
-            <LogOut className="size-4" />
-            Sign out
-          </Link>
+          <form action={signOut}>
+            <button type="submit" className="flex w-full items-center gap-2">
+              <LogOut className="size-4" />
+              Sign out
+            </button>
+          </form>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

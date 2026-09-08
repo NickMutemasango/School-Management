@@ -6,14 +6,19 @@ import {
   PersonalDetailsForm,
   RegistryDetails,
 } from "@/components/student/personal-details/personal-details-form";
-import { studentFullName, studentProfile } from "@/lib/data/student";
+import { studentProfile as emptyProfile } from "@/lib/data/student";
+import { getCurrentStudentRow, toStudentProfile } from "@/lib/students/current-student";
 
 export const metadata: Metadata = {
   title: "Personal Details · Student Portal",
   description: "Review and update your contact and guardian information.",
 };
 
-export default function StudentPersonalDetailsPage() {
+export default async function StudentPersonalDetailsPage() {
+  const row = await getCurrentStudentRow();
+  const profile = row ? toStudentProfile(row) : emptyProfile;
+  const fullName = `${profile.firstName} ${profile.lastName}`.trim();
+
   return (
     <>
       <PageHeader
@@ -22,14 +27,14 @@ export default function StudentPersonalDetailsPage() {
       />
 
       <ProfileHeader
-        name={studentFullName}
-        classLevel={studentProfile.classLevel}
-        regNumber={studentProfile.regNumber}
+        name={fullName}
+        classLevel={profile.classLevel}
+        regNumber={profile.regNumber}
       />
 
       <div className="space-y-5">
-        <PersonalDetailsForm profile={studentProfile} />
-        <RegistryDetails profile={studentProfile} />
+        <PersonalDetailsForm profile={profile} />
+        <RegistryDetails profile={profile} />
       </div>
     </>
   );

@@ -1,8 +1,9 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
+import { useActionState } from "react";
 import Link from "next/link";
-import { CheckCircle2, Save, Upload, UserPlus } from "lucide-react";
+import { AlertCircle, CheckCircle2, Copy, Loader2, Save, Upload, UserPlus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -17,45 +18,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DateSelectField } from "@/components/shared/date-select-field";
 import { CLASS_LEVELS } from "@/lib/data/students";
+import { enrollStudent, type EnrollState } from "@/app/admin/students/enroll/actions";
+
+const initialState: EnrollState = { error: null, success: null };
 
 /**
- * Enrollment form UI only - submitting shows a local confirmation state.
- * Wire `onSubmit` to a real mutation when the backend lands.
+ * Creates a real student login (Supabase Auth account + `students` row) on
+ * submit. The Fees section below isn't wired up yet - there's no invoices
+ * table to assign a billing profile against.
  */
 export function EnrollmentForm() {
-  const [submitted, setSubmitted] = React.useState(false);
+  const [state, formAction, isPending] = useActionState(enrollStudent, initialState);
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setSubmitted(true);
-  }
-
-  if (submitted) {
-    return (
-      <Card className="items-center gap-0 p-12 text-center">
-        <div className="grid size-16 place-items-center rounded-2xl bg-emerald-50 text-emerald-600">
-          <CheckCircle2 className="size-8" />
-        </div>
-        <h2 className="mt-6 text-xl font-bold tracking-tight">Application captured</h2>
-        <p className="text-muted-foreground mt-2 max-w-md text-sm">
-          The enrollment details have been recorded. Once a backend is connected,
-          this will create the student record and issue a registration number.
-        </p>
-        <div className="mt-6 flex gap-2">
-          <Button variant="outline" onClick={() => setSubmitted(false)}>
-            Enroll another
-          </Button>
-          <Button variant="accent" asChild>
-            <Link href="/admin/students">Back to directory</Link>
-          </Button>
-        </div>
-      </Card>
-    );
+  if (state.success) {
+    return <EnrollmentSuccess {...state.success} />;
   }
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form action={formAction}>
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           <FormSection
@@ -65,12 +47,14 @@ export function EnrollmentForm() {
             <div className="grid gap-4 sm:grid-cols-2">
               <Field
                 id="firstName"
+                name="firstName"
                 label="First Name"
                 placeholder="Enter first name"
                 required
               />
               <Field
                 id="lastName"
+                name="lastName"
                 label="Surname"
                 placeholder="Enter surname"
                 required
@@ -78,22 +62,28 @@ export function EnrollmentForm() {
 
               <div className="grid gap-2">
                 <Label htmlFor="gender">Gender</Label>
-                <Select>
+                <Select name="gender">
                   <SelectTrigger id="gender">
                     <SelectValue placeholder="Select gender" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="female">Female</SelectItem>
-                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="Female">Female</SelectItem>
+                    <SelectItem value="Male">Male</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <Field id="dob" label="Date of Birth" type="date" required />
+              <DateSelectField
+                id="dob"
+                name="dob"
+                label="Date of Birth"
+                required
+                minYear={new Date().getFullYear() - 25}
+              />
 
               <div className="grid gap-2">
                 <Label htmlFor="classLevel">Class Level</Label>
-                <Select>
+                <Select name="classLevel" required>
                   <SelectTrigger id="classLevel">
                     <SelectValue placeholder="Select class" />
                   </SelectTrigger>
@@ -107,11 +97,14 @@ export function EnrollmentForm() {
                 </Select>
               </div>
 
-              <Field
+              <DateSelectField
                 id="enrolledOn"
+                name="enrolledOn"
                 label="Enrollment Date"
-                type="date"
                 required
+                defaultValue={new Date().toISOString().slice(0, 10)}
+                minYear={new Date().getFullYear() - 1}
+                maxYear={new Date().getFullYear() + 1}
               />
             </div>
 
@@ -119,6 +112,7 @@ export function EnrollmentForm() {
               <Label htmlFor="address">Home Address</Label>
               <Textarea
                 id="address"
+                name="address"
                 placeholder="Street, suburb, city"
                 className="min-h-20"
               />
@@ -132,13 +126,14 @@ export function EnrollmentForm() {
             <div className="grid gap-4 sm:grid-cols-2">
               <Field
                 id="guardianName"
+                name="guardianName"
                 label="Guardian Full Name"
                 placeholder="Enter guardian's full name"
                 required
               />
               <div className="grid gap-2">
                 <Label htmlFor="relationship">Relationship</Label>
-                <Select>
+                <Select name="relationship">
                   <SelectTrigger id="relationship">
                     <SelectValue placeholder="Select relationship" />
                   </SelectTrigger>
@@ -152,6 +147,7 @@ export function EnrollmentForm() {
               </div>
               <Field
                 id="guardianPhone"
+                name="guardianPhone"
                 label="Phone Number"
                 type="tel"
                 placeholder="+263 7X XXX XXXX"
@@ -159,6 +155,7 @@ export function EnrollmentForm() {
               />
               <Field
                 id="guardianEmail"
+                name="guardianEmail"
                 label="Email Address"
                 type="email"
                 placeholder="name@example.com"
@@ -185,11 +182,11 @@ export function EnrollmentForm() {
 
           <FormSection
             title="Fees"
-            description="Assign the billing profile for this student."
+            description="Not wired up yet - billing lands with the Finance module."
           >
             <div className="grid gap-2">
               <Label htmlFor="feeProfile">Fee Profile</Label>
-              <Select>
+              <Select disabled>
                 <SelectTrigger id="feeProfile">
                   <SelectValue placeholder="Select profile" />
                 </SelectTrigger>
@@ -207,18 +204,21 @@ export function EnrollmentForm() {
               label="Initial Deposit (USD)"
               type="number"
               placeholder="0.00"
+              disabled
             />
-
-            <div className="grid gap-2">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                placeholder="Any additional context for the registry..."
-              />
-            </div>
           </FormSection>
         </div>
       </div>
+
+      {state.error && (
+        <p
+          role="alert"
+          className="mt-6 flex items-center gap-1.5 text-sm font-medium text-red-600 dark:text-red-400"
+        >
+          <AlertCircle className="size-4 shrink-0" />
+          {state.error}
+        </p>
+      )}
 
       <Separator className="my-8" />
 
@@ -226,16 +226,77 @@ export function EnrollmentForm() {
         <Button type="button" variant="outline" asChild>
           <Link href="/admin/students">Cancel</Link>
         </Button>
-        <Button type="button" variant="secondary">
+        <Button type="button" variant="secondary" disabled>
           <Save className="size-4" />
           Save as draft
         </Button>
-        <Button type="submit" variant="accent">
-          <UserPlus className="size-4" />
+        <Button type="submit" variant="accent" disabled={isPending}>
+          {isPending ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <UserPlus className="size-4" />
+          )}
           Enroll Student
         </Button>
       </div>
     </form>
+  );
+}
+
+function EnrollmentSuccess({
+  regNumber,
+  tempPassword,
+  fullName,
+}: {
+  regNumber: string;
+  tempPassword: string;
+  fullName: string;
+}) {
+  const [copied, setCopied] = React.useState(false);
+
+  function copyCredentials() {
+    navigator.clipboard.writeText(
+      `Registration Number: ${regNumber}\nTemporary Password: ${tempPassword}`
+    );
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <Card className="items-center gap-0 p-12 text-center">
+      <div className="grid size-16 place-items-center rounded-2xl bg-emerald-50 text-emerald-600">
+        <CheckCircle2 className="size-8" />
+      </div>
+      <h2 className="mt-6 text-xl font-bold tracking-tight">{fullName} is enrolled</h2>
+      <p className="text-muted-foreground mt-2 max-w-md text-sm">
+        Share these sign-in details with the student or guardian - the password
+        won&rsquo;t be shown again.
+      </p>
+
+      <div className="mt-6 w-full max-w-xs space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-left dark:border-slate-800 dark:bg-slate-900">
+        <div>
+          <p className="text-muted-foreground text-xs">Registration Number</p>
+          <p className="font-mono text-sm font-semibold">{regNumber}</p>
+        </div>
+        <div>
+          <p className="text-muted-foreground text-xs">Temporary Password</p>
+          <p className="font-mono text-sm font-semibold">{tempPassword}</p>
+        </div>
+      </div>
+
+      <div className="mt-6 flex flex-wrap justify-center gap-2">
+        <Button variant="outline" onClick={copyCredentials}>
+          <Copy className="size-4" />
+          {copied ? "Copied" : "Copy credentials"}
+        </Button>
+        <Button variant="outline" asChild>
+          <a href="/admin/students/enroll">Enroll another</a>
+        </Button>
+        <Button variant="accent" asChild>
+          <Link href="/admin/students">Back to directory</Link>
+        </Button>
+      </div>
+    </Card>
   );
 }
 

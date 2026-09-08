@@ -24,7 +24,14 @@ const ROLES = [
   },
 ] as const;
 
-export default function LoginChooserPage() {
+export default async function LoginChooserPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next } = await searchParams;
+  const nextQuery = next ? `?next=${encodeURIComponent(next)}` : "";
+
   return (
     <div className="bg-background flex min-h-screen items-center justify-center px-4 py-10">
       <div className="mx-auto w-full max-w-md">
@@ -51,7 +58,7 @@ export default function LoginChooserPage() {
             {ROLES.map((role) => (
               <Link
                 key={role.href}
-                href={role.href}
+                href={`${role.href}${nextQuery}`}
                 className="group flex items-center gap-4 rounded-xl border border-slate-300 bg-white/70 p-4 text-left shadow-sm backdrop-blur-sm transition-all duration-200 hover:border-blue-400 hover:bg-white hover:shadow-md focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:ring-offset-2 focus-visible:outline-none dark:border-slate-700 dark:bg-slate-800/60 dark:hover:border-blue-500 dark:hover:bg-slate-800 dark:focus-visible:ring-offset-slate-900"
               >
                 <span className="grid size-11 shrink-0 place-items-center rounded-full bg-blue-50 text-blue-600 transition-colors group-hover:bg-blue-600 group-hover:text-white dark:bg-blue-950/50 dark:text-blue-400 dark:group-hover:bg-blue-600 dark:group-hover:text-white">

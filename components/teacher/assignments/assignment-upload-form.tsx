@@ -1,10 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { CalendarDays, CheckCircle2, ClipboardList, Loader2, Upload } from "lucide-react";
+import { CheckCircle2, ClipboardList, Loader2, Upload } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
+import { DateSelectField } from "@/components/shared/date-select-field";
 import { CLASS_LEVELS } from "@/lib/data/class-levels";
 import type { Assignment } from "@/lib/data/assignments";
 
@@ -138,24 +139,17 @@ export function AssignmentUploadForm({ onCreate }: AssignmentUploadFormProps) {
             </select>
           </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="assignmentDueOn">
-              <CalendarDays className="size-4 shrink-0 text-slate-400" />
-              Due Date
-            </Label>
-            <input
-              id="assignmentDueOn"
-              type="date"
-              value={dueOn}
-              onChange={(e) => {
-                setDueOn(e.target.value);
-                touch();
-              }}
-              aria-invalid={Boolean(error) && dueOn === ""}
-              aria-describedby={errorId}
-              className={FIELD}
-            />
-          </div>
+          <DateSelectField
+            id="assignmentDueOn"
+            label="Due Date"
+            value={dueOn}
+            onChange={(v) => {
+              setDueOn(v);
+              touch();
+            }}
+            minYear={new Date().getFullYear()}
+            maxYear={new Date().getFullYear() + 1}
+          />
         </div>
 
         <div className="mt-4 grid gap-2">

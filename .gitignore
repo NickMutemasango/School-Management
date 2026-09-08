@@ -10,3 +10,4 @@ npm-debug.log*
 !.env.example
 next-env.d.ts
 tsconfig.tsbuildinfo
+supabase/.temp/
