@@ -44,8 +44,8 @@ export async function signInWithGoogle(formData: FormData) {
       redirectTo: `${origin}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ""}`,
       // Restricts the Google account picker to the institute's Workspace
       // domain when set - see .env.example.
-      ...(process.env.NEXT_PUBLIC_STAFF_GOOGLE_HD
-        ? { queryParams: { hd: process.env.NEXT_PUBLIC_STAFF_GOOGLE_HD } }
+      ...(process.env.NEXT_STAFF_GOOGLE_HD
+        ? { queryParams: { hd: process.env.NEXT_STAFF_GOOGLE_HD } }
         : {}),
     },
   });
