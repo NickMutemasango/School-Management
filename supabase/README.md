@@ -13,7 +13,7 @@ Copy `.env.example` to `.env.local` and fill in the three keys above, plus:
 - `STUDENT_AUTH_EMAIL_DOMAIN` — any domain you own or a made-up one (e.g.
   `students.<yourschool>.internal`). It never receives mail; it's only used
   to turn a registration number into a Supabase Auth identity.
-- `NEXT_PUBLIC_STAFF_GOOGLE_HD` — optional, restricts the Google sign-in
+- `NEXT_STAFF_GOOGLE_HD` — optional, restricts the Google sign-in
   picker to your Workspace domain.
 - `RESEND_API_KEY` / `RESEND_FROM_EMAIL` — see step 5.
 
