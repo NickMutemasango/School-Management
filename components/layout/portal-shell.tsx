@@ -5,6 +5,7 @@ import { PortalContent } from "./portal-content";
 import { SidebarProvider } from "./sidebar-provider";
 import type { PortalKey } from "@/lib/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { getNotificationSummary } from "@/lib/notifications/notification-summary";
 
 interface PortalShellProps {
   portal: PortalKey;
@@ -19,12 +20,17 @@ interface PortalShellProps {
  */
 export async function PortalShell({ portal, children }: PortalShellProps) {
   const user = await getCurrentUser();
+  const notification = user
+    ? await getNotificationSummary(portal, user.id)
+    : { count: 0, items: [], viewAllHref: "/login" };
 
   return (
     <SidebarProvider>
       <div className="min-h-screen">
         <AppSidebar portal={portal} user={user} />
-        <PortalContent user={user}>{children}</PortalContent>
+        <PortalContent user={user} notification={notification}>
+          {children}
+        </PortalContent>
       </div>
     </SidebarProvider>
   );

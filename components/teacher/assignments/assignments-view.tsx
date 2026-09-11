@@ -5,6 +5,7 @@ import * as React from "react";
 import { AssignmentUploadForm } from "./assignment-upload-form";
 import { AssignmentList } from "./assignment-list";
 import { assignmentsSeed, type Assignment } from "@/lib/data/assignments";
+import type { AssignedClass } from "@/lib/teacher/assigned-classes";
 
 /**
  * Owns the assignment list so a posted assignment appears in the viewer
@@ -13,7 +14,7 @@ import { assignmentsSeed, type Assignment } from "@/lib/data/assignments";
  * UI stage: seeded from mock records and held in `useState`. Swap the seed for
  * a query and `handleCreate` for a mutation when the backend lands.
  */
-export function AssignmentsView() {
+export function AssignmentsView({ assignedClasses }: { assignedClasses: AssignedClass[] }) {
   const [assignments, setAssignments] =
     React.useState<Assignment[]>(assignmentsSeed);
   const [openId, setOpenId] = React.useState<string | null>(
@@ -29,7 +30,7 @@ export function AssignmentsView() {
 
   return (
     <div className="space-y-8">
-      <AssignmentUploadForm onCreate={handleCreate} />
+      <AssignmentUploadForm onCreate={handleCreate} assignedClasses={assignedClasses} />
 
       <section>
         <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">

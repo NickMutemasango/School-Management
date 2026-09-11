@@ -2,12 +2,11 @@
  * Weekly timetable data contract.
  *
  * The bell schedule (periods, breaks) and weekday list are configuration and
- * stay populated. `timetable` holds the actual lesson allocations and is empty
- * until a backend is connected - the dashboard's "Today's Schedule" derives
- * from it, so the two can never disagree.
+ * stay populated here. `TimetableEntry` records come from a real query
+ * (`lib/teacher/timetable.ts`) - these helpers take them as an explicit
+ * argument rather than closing over a module constant, since the data is
+ * now per-request and per-teacher rather than a single frozen array.
  */
-
-import { classNameById } from "./teacher-classes";
 
 export type Weekday = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday";
 
@@ -47,29 +46,22 @@ export interface TimetableEntry {
   id: string;
   day: Weekday;
   periodId: string;
-  classId: string;
+  className: string;
   subject: string;
   room: string;
 }
 
-/** Lesson allocations. Empty until a backend is connected. */
-export const timetable: TimetableEntry[] = [];
-
 /** Entry occupying a given day/period, if any. */
-export function entryAt(day: Weekday, periodId: string) {
-  return timetable.find((e) => e.day === day && e.periodId === periodId);
+export function entryAt(entries: TimetableEntry[], day: Weekday, periodId: string) {
+  return entries.find((e) => e.day === day && e.periodId === periodId);
 }
 
 export function periodById(periodId: string) {
   return periods.find((p) => p.id === periodId);
 }
 
-export function classNameFor(entry: TimetableEntry) {
-  return classNameById[entry.classId] ?? entry.classId;
-}
-
-export function entriesForDay(day: Weekday) {
-  return timetable
+export function entriesForDay(entries: TimetableEntry[], day: Weekday) {
+  return entries
     .filter((e) => e.day === day)
     .sort((a, b) => {
       const pa = periodById(a.periodId)?.startTime ?? "";
@@ -79,15 +71,14 @@ export function entriesForDay(day: Weekday) {
 }
 
 /** Teaching load per weekday, for the summary strip. */
-export function lessonsPerDay(): Record<Weekday, number> {
+export function lessonsPerDay(entries: TimetableEntry[]): Record<Weekday, number> {
   return Object.fromEntries(
-    WEEKDAYS.map((d) => [d, timetable.filter((e) => e.day === d).length])
+    WEEKDAYS.map((d) => [d, entries.filter((e) => e.day === d).length])
   ) as Record<Weekday, number>;
 }
 
-/**
- * Fixed "now" so the dashboard's done/current/upcoming banding is
- * deterministic - a build-time `new Date()` would freeze into the SSG output.
- */
-export const REFERENCE_WEEKDAY: Weekday = "Friday";
-export const REFERENCE_TIME = "09:30";
+/** Today's name, or null on a weekend (the timetable has no Sat/Sun columns). */
+export function todayWeekday(): Weekday | null {
+  const name = new Date().toLocaleDateString("en-US", { weekday: "long" });
+  return (WEEKDAYS as string[]).includes(name) ? (name as Weekday) : null;
+}

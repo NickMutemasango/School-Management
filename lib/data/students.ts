@@ -7,27 +7,11 @@
  * the directory, profile modal, and enrollment form keep compiling.
  */
 
+import { CLASS_LEVELS, type ClassLevel } from "@/lib/data/class-levels";
+
+export { CLASS_LEVELS, type ClassLevel };
+
 export type EnrollmentStatus = "active" | "inactive" | "deregistered";
-
-/** The school's class structure — configuration, not sample data. */
-export const CLASS_LEVELS = [
-  "ECD",
-  "GRADE 1",
-  "GRADE 2",
-  "GRADE 3",
-  "GRADE 4",
-  "GRADE 5",
-  "GRADE 6",
-  "GRADE 7",
-  "FORM 1",
-  "FORM 2",
-  "FORM 3",
-  "FORM 4",
-  "FORM 5",
-  "FORM 6",
-] as const;
-
-export type ClassLevel = (typeof CLASS_LEVELS)[number];
 
 export interface Student {
   id: string;

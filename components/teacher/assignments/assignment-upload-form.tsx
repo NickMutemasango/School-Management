@@ -6,8 +6,8 @@ import { CheckCircle2, ClipboardList, Loader2, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import { DateSelectField } from "@/components/shared/date-select-field";
-import { CLASS_LEVELS } from "@/lib/data/class-levels";
 import type { Assignment } from "@/lib/data/assignments";
+import type { AssignedClass } from "@/lib/teacher/assigned-classes";
 
 /**
  * Shared field chrome, matching `notes-upload-form.tsx` so the two teacher
@@ -22,10 +22,11 @@ type Status = "idle" | "saving" | "done";
 interface AssignmentUploadFormProps {
   /** Called with the new assignment once the mock save resolves. */
   onCreate: (assignment: Assignment) => void;
+  assignedClasses: AssignedClass[];
 }
 
 /** Create-assignment UI only - no persistence yet. */
-export function AssignmentUploadForm({ onCreate }: AssignmentUploadFormProps) {
+export function AssignmentUploadForm({ onCreate, assignedClasses }: AssignmentUploadFormProps) {
   const [title, setTitle] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [classLevel, setClassLevel] = React.useState("");
@@ -126,14 +127,18 @@ export function AssignmentUploadForm({ onCreate }: AssignmentUploadFormProps) {
                 setClassLevel(e.target.value);
                 touch();
               }}
+              disabled={assignedClasses.length === 0}
               aria-invalid={Boolean(error) && classLevel === ""}
               aria-describedby={errorId}
               className={FIELD}
             >
-              <option value="">Select class</option>
-              {CLASS_LEVELS.map((level) => (
-                <option key={level} value={level}>
-                  {level}
+              <option value="">
+                {assignedClasses.length === 0 ? "No classes assigned yet" : "Select class"}
+              </option>
+              {assignedClasses.map((cls) => (
+                <option key={cls.level} value={cls.level}>
+                  {cls.level}
+                  {cls.subjects.length > 0 ? ` (${cls.subjects.join(", ")})` : ""}
                 </option>
               ))}
             </select>

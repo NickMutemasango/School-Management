@@ -1,21 +1,20 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import { classDefinitions } from "@/lib/data/teacher-classes";
+import { cn, avatarColorFor } from "@/lib/utils";
 import {
   WEEKDAYS,
-  classNameFor,
   entryAt,
   periods,
+  type TimetableEntry,
   type Weekday,
 } from "@/lib/data/teacher-schedule";
 
-/** Class id -> tile tone, reusing each class's colour from the registry. */
-const TONE_BY_CLASS: Record<string, string> = Object.fromEntries(
-  classDefinitions.map((c) => [c.id, c.tone])
-);
+interface TimetableGridProps {
+  entries: TimetableEntry[];
+  highlightDay?: Weekday;
+}
 
-export function TimetableGrid({ highlightDay }: { highlightDay: Weekday }) {
+export function TimetableGrid({ entries, highlightDay }: TimetableGridProps) {
   return (
     <div className="bg-background overflow-hidden rounded-2xl border border-slate-200 shadow-sm dark:border-slate-800">
       <div className="overflow-x-auto">
@@ -89,7 +88,7 @@ export function TimetableGrid({ highlightDay }: { highlightDay: Weekday }) {
                   </th>
 
                   {WEEKDAYS.map((day) => {
-                    const entry = entryAt(day, period.id);
+                    const entry = entryAt(entries, day, period.id);
                     const isToday = day === highlightDay;
 
                     return (
@@ -104,12 +103,11 @@ export function TimetableGrid({ highlightDay }: { highlightDay: Weekday }) {
                           <div
                             className={cn(
                               "rounded-lg p-2.5",
-                              TONE_BY_CLASS[entry.classId] ??
-                                "bg-slate-100 text-slate-700"
+                              avatarColorFor(entry.className)
                             )}
                           >
                             <span className="block truncate text-xs font-bold">
-                              {classNameFor(entry)}
+                              {entry.className}
                             </span>
                             <span className="block truncate text-[11px] opacity-80">
                               {entry.subject}

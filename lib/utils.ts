@@ -15,6 +15,14 @@ export function formatCurrency(value: number) {
   }).format(value);
 }
 
+/** "245 KB", "1.2 MB" */
+export function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${Math.round(kb)} KB`;
+  return `${(kb / 1024).toFixed(1)} MB`;
+}
+
 /** "Jun 28, 2026" */
 export function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", {
