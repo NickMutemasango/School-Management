@@ -1,38 +1,26 @@
 "use server";
 
-import { cookies, headers } from "next/headers";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
-import { PENDING_NAME_COOKIE } from "@/lib/auth/pending-name-cookie";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
 import { notifyIfPending } from "@/lib/auth/notify-if-pending";
+import {
+  EMAIL_PATTERN,
+  NAME_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_MAX_LENGTH,
+  passwordByteLength,
+} from "@/lib/auth/validation";
 
 /**
  * Both the "Sign In" and "Sign Up" tabs call this - Google decides whether
  * the account is new or returning, and `handle_new_user` (SQL trigger)
- * creates the pending profile on first sign-in either way.
- *
- * The Sign Up tab additionally collects a first/last name. Google OAuth
- * doesn't accept custom metadata up front, so the name is stashed in a
- * short-lived cookie and applied to the profile once /auth/callback has an
- * authenticated session to attach it to.
+ * creates the pending profile on first sign-in either way, taking the name
+ * from Google's own account metadata.
  */
 export async function signInWithGoogle(formData: FormData) {
-  const firstName = String(formData.get("firstName") ?? "").trim();
-  const lastName = String(formData.get("lastName") ?? "").trim();
-  const fullName = [firstName, lastName].filter(Boolean).join(" ");
-
-  if (fullName) {
-    (await cookies()).set(PENDING_NAME_COOKIE, fullName, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      maxAge: 60 * 10,
-      path: "/",
-    });
-  }
-
   const next = safeNextPath(String(formData.get("next") ?? ""));
 
   const origin = (await headers()).get("origin");
@@ -75,7 +63,7 @@ export async function signUpStaffWithPassword(
 ): Promise<StaffSignUpState> {
   const firstName = String(formData.get("firstName") ?? "").trim();
   const lastName = String(formData.get("lastName") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
   const confirmPassword = String(formData.get("confirmPassword") ?? "");
   const next = safeNextPath(String(formData.get("next") ?? ""));
@@ -83,8 +71,23 @@ export async function signUpStaffWithPassword(
   if (!firstName || !lastName || !email || !password) {
     return { error: "Fill in all fields.", needsConfirmation: false };
   }
-  if (password.length < 8) {
-    return { error: "Password must be at least 8 characters.", needsConfirmation: false };
+  if (firstName.length > NAME_MAX_LENGTH || lastName.length > NAME_MAX_LENGTH) {
+    return { error: "Name is too long.", needsConfirmation: false };
+  }
+  if (!EMAIL_PATTERN.test(email)) {
+    return { error: "Enter a valid email address.", needsConfirmation: false };
+  }
+  if (password.length < PASSWORD_MIN_LENGTH) {
+    return {
+      error: `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`,
+      needsConfirmation: false,
+    };
+  }
+  if (passwordByteLength(password) > PASSWORD_MAX_LENGTH) {
+    return {
+      error: `Password must be at most ${PASSWORD_MAX_LENGTH} characters.`,
+      needsConfirmation: false,
+    };
   }
   if (password !== confirmPassword) {
     return { error: "Passwords don't match.", needsConfirmation: false };
@@ -123,7 +126,7 @@ export async function signInStaffWithPassword(
   _prev: StaffSignInState,
   formData: FormData
 ): Promise<StaffSignInState> {
-  const email = String(formData.get("email") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
   const next = safeNextPath(String(formData.get("next") ?? ""));
 

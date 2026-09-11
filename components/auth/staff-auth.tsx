@@ -13,6 +13,7 @@ import {
   type StaffSignInState,
   type StaffSignUpState,
 } from "@/app/(auth)/login/staff/actions";
+import { NAME_MAX_LENGTH, PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH } from "@/lib/auth/validation";
 
 /** Google's four-colour "G" mark. Lucide has no brand icons, so it's inline. */
 function GoogleMark({ className }: { className?: string }) {
@@ -143,43 +144,6 @@ export function StaffAuth({ next }: { next?: string }) {
           <>
             <form action={signInWithGoogle} className="space-y-4">
               {next && <input type="hidden" name="next" value={next} />}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label
-                    htmlFor="firstName"
-                    className="text-sm leading-none font-semibold text-slate-700 dark:text-slate-300"
-                  >
-                    First name
-                  </label>
-                  <input
-                    id="firstName"
-                    name="firstName"
-                    type="text"
-                    required
-                    autoComplete="given-name"
-                    placeholder="Jane"
-                    className={INPUT_CLASS}
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label
-                    htmlFor="lastName"
-                    className="text-sm leading-none font-semibold text-slate-700 dark:text-slate-300"
-                  >
-                    Last name
-                  </label>
-                  <input
-                    id="lastName"
-                    name="lastName"
-                    type="text"
-                    required
-                    autoComplete="family-name"
-                    placeholder="Moyo"
-                    className={INPUT_CLASS}
-                  />
-                </div>
-              </div>
 
               <button
                 type="submit"
@@ -316,6 +280,7 @@ function StaffSignUpPasswordForm({ next }: { next?: string }) {
             name="firstName"
             type="text"
             required
+            maxLength={NAME_MAX_LENGTH}
             autoComplete="given-name"
             disabled={isPending}
             placeholder="Jane"
@@ -335,6 +300,7 @@ function StaffSignUpPasswordForm({ next }: { next?: string }) {
             name="lastName"
             type="text"
             required
+            maxLength={NAME_MAX_LENGTH}
             autoComplete="family-name"
             disabled={isPending}
             placeholder="Moyo"
@@ -374,10 +340,11 @@ function StaffSignUpPasswordForm({ next }: { next?: string }) {
           name="password"
           type="password"
           required
-          minLength={8}
+          minLength={PASSWORD_MIN_LENGTH}
+          maxLength={PASSWORD_MAX_LENGTH}
           autoComplete="new-password"
           disabled={isPending}
-          placeholder="At least 8 characters"
+          placeholder={`${PASSWORD_MIN_LENGTH}-${PASSWORD_MAX_LENGTH} characters`}
           className={INPUT_CLASS}
         />
       </div>
@@ -394,7 +361,8 @@ function StaffSignUpPasswordForm({ next }: { next?: string }) {
           name="confirmPassword"
           type="password"
           required
-          minLength={8}
+          minLength={PASSWORD_MIN_LENGTH}
+          maxLength={PASSWORD_MAX_LENGTH}
           autoComplete="new-password"
           disabled={isPending}
           className={INPUT_CLASS}

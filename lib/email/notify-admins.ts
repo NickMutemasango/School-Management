@@ -1,7 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "./resend";
 
-/** `fullName`/`email` here come straight from signup form input - escape before interpolating into HTML. */
+/** `fullName`/`email` here come from signup form input or the OAuth provider - escape before interpolating into HTML. */
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
