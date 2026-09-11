@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireActiveAdmin } from "@/lib/auth/require-active-admin";
 import { studentAuthEmail } from "@/lib/auth/student-email";
 import { generateTempPassword } from "@/lib/auth/generate-password";
 import { CLASS_LEVELS } from "@/lib/data/students";
@@ -25,6 +26,8 @@ export async function enrollStudent(
   _prev: EnrollState,
   formData: FormData
 ): Promise<EnrollState> {
+  await requireActiveAdmin();
+
   const firstName = String(formData.get("firstName") ?? "").trim();
   const lastName = String(formData.get("lastName") ?? "").trim();
   const gender = String(formData.get("gender") ?? "");

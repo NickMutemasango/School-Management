@@ -57,7 +57,6 @@ export const adminNav: NavSection[] = [
   },
 ];
 
-/** Placeholder navigation - the teacher portal is built out in a later step. */
 export const teacherNav: NavSection[] = [
   {
     label: "Main Menu",
@@ -85,6 +84,7 @@ export const teacherNav: NavSection[] = [
         activePrefixes: ["/teacher/reports"],
       },
       { title: "Timetable", href: "/teacher/schedule", icon: CalendarDays },
+      { title: "My Students", href: "/teacher/students", icon: Users },
     ],
   },
 ];
@@ -99,6 +99,7 @@ export const studentNav: NavSection[] = [
         href: "/student/personal-details",
         icon: IdCard,
       },
+      { title: "My Class", href: "/student/class", icon: Users },
     ],
   },
   {

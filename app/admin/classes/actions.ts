@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireActiveAdmin } from "@/lib/auth/require-active-admin";
 import { CLASS_LEVELS } from "@/lib/data/class-levels";
 import { SUBJECTS } from "@/lib/data/notes";
 
@@ -16,12 +17,14 @@ export interface CreateClassState {
 /**
  * `classes`/`class_teacher_subjects` have no insert/update/delete RLS
  * policies (see migration 0005) - all mutations go through this
- * service-role client, same convention as student enrollment.
+ * service-role client, gated by requireActiveAdmin() below.
  */
 export async function createClass(
   _prev: CreateClassState,
   formData: FormData
 ): Promise<CreateClassState> {
+  await requireActiveAdmin();
+
   const level = String(formData.get("level") ?? "");
   const section = String(formData.get("section") ?? "").trim();
 
@@ -47,6 +50,8 @@ export async function createClass(
 }
 
 export async function deleteClass(classId: string) {
+  await requireActiveAdmin();
+
   const admin = createAdminClient();
   const { error } = await admin.from("classes").delete().eq("id", classId);
 
@@ -55,6 +60,8 @@ export async function deleteClass(classId: string) {
 }
 
 export async function assignTeacher(classId: string, teacherId: string, subject: string) {
+  await requireActiveAdmin();
+
   if (!(SUBJECTS as readonly string[]).includes(subject)) {
     throw new Error("Select a valid subject.");
   }
@@ -74,6 +81,8 @@ export async function assignTeacher(classId: string, teacherId: string, subject:
 }
 
 export async function removeAssignment(assignmentId: string) {
+  await requireActiveAdmin();
+
   const admin = createAdminClient();
   const { error } = await admin
     .from("class_teacher_subjects")
@@ -82,4 +91,43 @@ export async function removeAssignment(assignmentId: string) {
 
   if (error) throw new Error(error.message);
   revalidatePath("/admin/classes");
+}
+
+/** Places an enrolled student into a class section - their subjects come from the class itself. */
+export async function assignStudentToClass(classId: string, studentId: string) {
+  await requireActiveAdmin();
+
+  const admin = createAdminClient();
+  const [{ data: cls }, { data: student }] = await Promise.all([
+    admin.from("classes").select("id, level").eq("id", classId).maybeSingle(),
+    admin.from("students").select("id, class_level").eq("id", studentId).maybeSingle(),
+  ]);
+
+  if (!cls || !student) {
+    throw new Error("The selected class or student no longer exists.");
+  }
+  if (cls.level !== student.class_level) {
+    throw new Error("A student can only join a class at their enrolled level.");
+  }
+
+  const { error } = await admin
+    .from("student_class_memberships")
+    .upsert({ student_id: studentId, class_id: classId }, { onConflict: "student_id" });
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/classes");
+  revalidatePath("/teacher/students");
+}
+
+export async function removeStudentFromClass(studentId: string) {
+  await requireActiveAdmin();
+
+  const { error } = await createAdminClient()
+    .from("student_class_memberships")
+    .delete()
+    .eq("student_id", studentId);
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/classes");
+  revalidatePath("/teacher/students");
 }

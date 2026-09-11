@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireActiveAdmin } from "@/lib/auth/require-active-admin";
 import { WEEKDAYS, teachingPeriods } from "@/lib/data/teacher-schedule";
 
 /** Postgres unique-violation error code. */
@@ -14,13 +15,15 @@ export interface CreateTimetableEntryState {
 
 /**
  * `timetable_entries` has no insert/update/delete RLS policies (see
- * migration 0006) - all mutations go through this service-role client, same
- * convention as classes/class_teacher_subjects.
+ * migration 0006) - all mutations go through this service-role client,
+ * gated by requireActiveAdmin() below.
  */
 export async function createTimetableEntry(
   _prev: CreateTimetableEntryState,
   formData: FormData
 ): Promise<CreateTimetableEntryState> {
+  await requireActiveAdmin();
+
   const classTeacherSubjectId = String(formData.get("classTeacherSubjectId") ?? "");
   const day = String(formData.get("day") ?? "");
   const periodId = String(formData.get("periodId") ?? "");
@@ -77,6 +80,8 @@ export async function createTimetableEntry(
 }
 
 export async function deleteTimetableEntry(entryId: string) {
+  await requireActiveAdmin();
+
   const admin = createAdminClient();
   const { error } = await admin.from("timetable_entries").delete().eq("id", entryId);
 

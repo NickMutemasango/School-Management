@@ -1,11 +1,11 @@
 "use server";
 
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
 import { notifyIfPending } from "@/lib/auth/notify-if-pending";
+import { getRequestOrigin } from "@/lib/auth/request-origin";
 import {
   EMAIL_PATTERN,
   NAME_MAX_LENGTH,
@@ -23,7 +23,7 @@ import {
 export async function signInWithGoogle(formData: FormData) {
   const next = safeNextPath(String(formData.get("next") ?? ""));
 
-  const origin = (await headers()).get("origin");
+  const origin = await getRequestOrigin();
   const supabase = await createClient();
 
   const { data, error } = await supabase.auth.signInWithOAuth({
@@ -93,7 +93,7 @@ export async function signUpStaffWithPassword(
     return { error: "Passwords don't match.", needsConfirmation: false };
   }
 
-  const origin = (await headers()).get("origin") ?? "";
+  const origin = await getRequestOrigin();
   const supabase = await createClient();
 
   const { data, error } = await supabase.auth.signUp({
