@@ -1,15 +1,16 @@
 /**
  * School-wide class levels, in the order the portal lists them: ECD, then
- * primary, then secondary. Configuration rather than sample data - shared by
- * Class Notes, Assignments, and End of Term Reports.
- *
- * NOTE: `lib/data/students.ts` still exports its own identical copy for the
- * admin directory. The two agree on order as of this change; they should be
- * collapsed into this module.
+ * primary, then secondary. Matches Zimbabwe's education structure - ECD 'A'
+ * (ages 3-4) and 'B' (ages 4-5), Grade 1-7 primary, Form 1-4 O-Level and
+ * Form 5-6 A-Level secondary. Configuration rather than sample data - shared
+ * by Class Notes, Assignments, End of Term Reports, and admin enrollment
+ * (`lib/data/students.ts` re-exports this module rather than keeping its own
+ * copy).
  */
 
 export const CLASS_LEVELS = [
-  "ECD",
+  "ECD A",
+  "ECD B",
   "GRADE 1",
   "GRADE 2",
   "GRADE 3",

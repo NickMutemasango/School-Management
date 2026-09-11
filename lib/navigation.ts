@@ -1,7 +1,5 @@
 import type { LucideIcon } from "lucide-react";
 import { BRAND } from "@/lib/brand";
-import { studentFullName, studentProfile } from "@/lib/data/student";
-import { teacherProfile } from "@/lib/data/teacher";
 import {
   BarChart3,
   BookOpen,
@@ -14,6 +12,7 @@ import {
   IdCard,
   LayoutGrid,
   NotebookPen,
+  School,
   ShieldCheck,
   Upload,
   Users,
@@ -50,6 +49,8 @@ export const adminNav: NavSection[] = [
         activePrefixes: ["/admin/students", "/admin/finance"],
       },
       { title: "Users", href: "/admin/users", icon: Users },
+      { title: "Classes", href: "/admin/classes", icon: School },
+      { title: "Timetable", href: "/admin/timetable", icon: CalendarDays },
       { title: "Analytics", href: "/admin/analytics", icon: BarChart3 },
       { title: "Reports", href: "/admin/reports", icon: FileText },
     ],
@@ -136,6 +137,7 @@ export interface PortalBrand {
  * server/client component boundary.
  */
 export interface CurrentUser {
+  id: string;
   name: string;
   email: string;
   role: string;
@@ -143,37 +145,18 @@ export interface CurrentUser {
 
 export const navByPortal: Record<
   PortalKey,
-  { brand: PortalBrand; sections: NavSection[]; user: CurrentUser }
+  { brand: PortalBrand; sections: NavSection[] }
 > = {
   admin: {
     brand: { title: BRAND.name, subtitle: "Super Admin", icon: Building2 },
     sections: adminNav,
-    user: {
-      name: "Nick Genius",
-      email: "nick.genius@school.admin",
-      role: "Super Admin",
-    },
   },
   teacher: {
     brand: { title: BRAND.name, subtitle: "Teacher", icon: GraduationCap },
     sections: teacherNav,
-    user: {
-      name: teacherProfile.name,
-      email: teacherProfile.email,
-      role: teacherProfile.role,
-    },
   },
   student: {
     brand: { title: BRAND.name, subtitle: "Student", icon: ShieldCheck },
     sections: studentNav,
-    user: {
-      name: studentFullName,
-      email: studentProfile.email,
-      // The student's class stands in for a role, e.g. "FORM 4".
-      role: studentProfile.classLevel,
-    },
   },
 };
-
-/** Unread notification count on the header bell. */
-export const notificationCount = 3;

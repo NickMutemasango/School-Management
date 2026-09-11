@@ -4,17 +4,23 @@ import * as React from "react";
 import Link from "next/link";
 import { ChevronRight, GraduationCap, Search } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/shared/empty-state";
-import { CLASS_LEVELS, levelSlug } from "@/lib/data/class-levels";
+import { levelSlug } from "@/lib/data/class-levels";
+import type { AssignedClass } from "@/lib/teacher/assigned-classes";
 
-export function NotesClassList() {
+export function NotesClassList({ classes }: { classes: readonly AssignedClass[] }) {
   const [query, setQuery] = React.useState("");
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return CLASS_LEVELS;
-    return CLASS_LEVELS.filter((l) => l.toLowerCase().includes(q));
-  }, [query]);
+    if (!q) return classes;
+    return classes.filter(
+      (c) =>
+        c.level.toLowerCase().includes(q) ||
+        c.subjects.some((s) => s.toLowerCase().includes(q))
+    );
+  }, [classes, query]);
 
   return (
     <>
@@ -34,20 +40,31 @@ export function NotesClassList() {
         <div className="bg-background rounded-2xl border border-slate-200 dark:border-slate-800">
           <EmptyState
             icon={GraduationCap}
-            title="No classes found"
-            description="Try a different search term."
+            title={classes.length === 0 ? "No classes assigned yet" : "No classes found"}
+            description={
+              classes.length === 0
+                ? "An admin hasn't assigned you to any classes yet."
+                : "Try a different search term."
+            }
           />
         </div>
       ) : (
         <ul className="space-y-3">
-          {filtered.map((level) => (
-            <li key={level}>
+          {filtered.map((cls) => (
+            <li key={cls.level}>
               <Link
-                href={`/teacher/notes/${levelSlug(level)}`}
+                href={`/teacher/notes/${levelSlug(cls.level)}`}
                 className="bg-background group flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-4 shadow-sm transition-all hover:border-slate-300 hover:shadow-md focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:outline-none dark:border-slate-800 dark:hover:border-slate-700"
               >
                 <GraduationCap className="size-5 shrink-0 text-blue-600 dark:text-blue-400" />
-                <span className="flex-1 font-medium">{level}</span>
+                <span className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                  <span className="font-medium">{cls.level}</span>
+                  {cls.subjects.map((subject) => (
+                    <Badge key={subject} variant="secondary">
+                      {subject}
+                    </Badge>
+                  ))}
+                </span>
                 <ChevronRight className="size-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" />
               </Link>
             </li>

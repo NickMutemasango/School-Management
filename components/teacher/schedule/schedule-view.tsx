@@ -9,17 +9,27 @@ import { ScheduleDayList } from "./schedule-day-list";
 import {
   WEEKDAYS,
   lessonsPerDay,
-  REFERENCE_WEEKDAY,
+  todayWeekday,
+  type TimetableEntry,
   type Weekday,
 } from "@/lib/data/teacher-schedule";
 
 type ViewMode = "week" | "day";
 
-export function ScheduleView() {
+export function ScheduleView({ entries }: { entries: TimetableEntry[] }) {
   const [view, setView] = React.useState<ViewMode>("week");
-  const [day, setDay] = React.useState<Weekday>(REFERENCE_WEEKDAY);
+  const [day, setDay] = React.useState<Weekday>("Monday");
+  // Resolved client-side (matches the TeacherGreeting pattern) so a server
+  // render in a different timezone can't disagree with the browser's "today".
+  const [highlightDay, setHighlightDay] = React.useState<Weekday | null>(null);
 
-  const perDay = React.useMemo(() => lessonsPerDay(), []);
+  React.useEffect(() => {
+    const today = todayWeekday();
+    setHighlightDay(today);
+    if (today) setDay(today);
+  }, []);
+
+  const perDay = React.useMemo(() => lessonsPerDay(entries), [entries]);
   const totalLessons = React.useMemo(
     () => Object.values(perDay).reduce((a, b) => a + b, 0),
     [perDay]
@@ -41,7 +51,7 @@ export function ScheduleView() {
             key={d}
             className={cn(
               "rounded-2xl border p-4 shadow-sm transition-colors",
-              d === REFERENCE_WEEKDAY
+              d === highlightDay
                 ? "border-blue-200 bg-blue-50/50 dark:border-blue-900 dark:bg-blue-950/20"
                 : "bg-background border-slate-200 dark:border-slate-800"
             )}
@@ -97,9 +107,9 @@ export function ScheduleView() {
       </div>
 
       {view === "week" ? (
-        <TimetableGrid highlightDay={REFERENCE_WEEKDAY} />
+        <TimetableGrid entries={entries} highlightDay={highlightDay ?? undefined} />
       ) : (
-        <ScheduleDayList day={day} />
+        <ScheduleDayList entries={entries} day={day} />
       )}
 
       <p className="text-sm text-slate-500 dark:text-slate-400">

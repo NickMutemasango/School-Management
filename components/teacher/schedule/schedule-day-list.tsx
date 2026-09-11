@@ -2,22 +2,22 @@
 
 import { CalendarDays, MapPin } from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import { cn, avatarColorFor } from "@/lib/utils";
 import { EmptyState } from "@/components/shared/empty-state";
-import { classDefinitions } from "@/lib/data/teacher-classes";
 import {
-  classNameFor,
   entriesForDay,
   periodById,
+  type TimetableEntry,
   type Weekday,
 } from "@/lib/data/teacher-schedule";
 
-const TONE_BY_CLASS: Record<string, string> = Object.fromEntries(
-  classDefinitions.map((c) => [c.id, c.tone])
-);
+interface ScheduleDayListProps {
+  entries: TimetableEntry[];
+  day: Weekday;
+}
 
-export function ScheduleDayList({ day }: { day: Weekday }) {
-  const entries = entriesForDay(day);
+export function ScheduleDayList({ entries: allEntries, day }: ScheduleDayListProps) {
+  const entries = entriesForDay(allEntries, day);
 
   if (entries.length === 0) {
     return (
@@ -51,17 +51,17 @@ export function ScheduleDayList({ day }: { day: Weekday }) {
                 <span
                   className={cn(
                     "grid size-10 shrink-0 place-items-center rounded-xl text-xs font-bold",
-                    TONE_BY_CLASS[entry.classId] ?? "bg-slate-100 text-slate-700"
+                    avatarColorFor(entry.className)
                   )}
                 >
-                  {classNameFor(entry).replace(/[^0-9A-Z]/g, "").slice(0, 3)}
+                  {entry.className.replace(/[^0-9A-Z]/g, "").slice(0, 3)}
                 </span>
 
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold">
                     {entry.subject}
                     <span className="ml-2 font-normal text-slate-500 dark:text-slate-400">
-                      {classNameFor(entry)}
+                      {entry.className}
                     </span>
                   </p>
                   <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-slate-500 dark:text-slate-400">

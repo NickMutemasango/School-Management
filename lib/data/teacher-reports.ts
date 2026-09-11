@@ -21,6 +21,8 @@ export interface ReportClass {
   level: string;
   studentCount: number;
   terms: ReportTerm[];
+  /** Subjects the signed-in teacher is assigned at this level - populated by the page, not this mock. */
+  subjects?: string[];
 }
 
 export const reportClasses: ReportClass[] = CLASS_LEVELS.map((level) => ({

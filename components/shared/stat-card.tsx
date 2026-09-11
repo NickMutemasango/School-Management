@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
 
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -23,8 +24,8 @@ export type StatTone = keyof typeof TONES;
 interface StatCardProps {
   label: string;
   value: string;
-  /** Sub-label under the title, e.g. a date range. */
-  caption?: string;
+  /** Sub-label under the title, e.g. a date range, or a link. */
+  caption?: ReactNode;
   /** Percentage change vs. the previous period. */
   delta?: number;
   deltaLabel?: string;

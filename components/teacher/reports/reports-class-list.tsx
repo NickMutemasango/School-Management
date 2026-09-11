@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Eye, GraduationCap, Search } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { levelSlug } from "@/lib/data/class-levels";
 import type { ReportClass } from "@/lib/data/teacher-reports";
@@ -48,8 +49,12 @@ export function ReportsClassList({ classes }: { classes: ReportClass[] }) {
         <div className="bg-background rounded-2xl border border-slate-200 dark:border-slate-800">
           <EmptyState
             icon={GraduationCap}
-            title="No classes found"
-            description="Try a different search term."
+            title={classes.length === 0 ? "No classes assigned yet" : "No classes found"}
+            description={
+              classes.length === 0
+                ? "An admin hasn't assigned you to any classes yet."
+                : "Try a different search term."
+            }
           />
         </div>
       ) : (
@@ -59,7 +64,14 @@ export function ReportsClassList({ classes }: { classes: ReportClass[] }) {
               key={cls.level}
               className="bg-background flex flex-col rounded-2xl border border-slate-200 p-5 shadow-sm transition-shadow hover:shadow-md dark:border-slate-800"
             >
-              <h2 className="text-lg font-bold tracking-tight">{cls.level}</h2>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-lg font-bold tracking-tight">{cls.level}</h2>
+                {cls.subjects?.map((subject) => (
+                  <Badge key={subject} variant="secondary">
+                    {subject}
+                  </Badge>
+                ))}
+              </div>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 {cls.studentCount} student{cls.studentCount === 1 ? "" : "s"}
               </p>

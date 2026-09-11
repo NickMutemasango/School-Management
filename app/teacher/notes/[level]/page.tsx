@@ -6,7 +6,9 @@ import { ArrowLeft } from "lucide-react";
 import { NotesUploadForm } from "@/components/teacher/notes/notes-upload-form";
 import { NotesFileList } from "@/components/teacher/notes/notes-file-list";
 import { CLASS_LEVELS, levelFromSlug, levelSlug } from "@/lib/data/class-levels";
-import { notesByLevel } from "@/lib/data/teacher-notes";
+import { getNotesForLevel } from "@/lib/notes/fetch-notes";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { getAssignedClassesForTeacher } from "@/lib/teacher/assigned-classes";
 
 interface PageProps {
   params: Promise<{ level: string }>;
@@ -32,7 +34,11 @@ export default async function NotesLevelPage({ params }: PageProps) {
 
   if (!level) notFound();
 
-  const files = notesByLevel[level] ?? [];
+  const user = await getCurrentUser();
+  const assignedClasses = user ? await getAssignedClassesForTeacher(user.id) : [];
+  const subjects = assignedClasses.find((c) => c.level === level)?.subjects ?? [];
+
+  const files = await getNotesForLevel(level);
 
   return (
     <>
@@ -47,8 +53,8 @@ export default async function NotesLevelPage({ params }: PageProps) {
       <h1 className="mb-6 text-2xl font-bold tracking-tight sm:text-3xl">{level}</h1>
 
       <div className="space-y-8">
-        <NotesUploadForm level={level} />
-        <NotesFileList files={files} />
+        <NotesUploadForm level={level} subjects={subjects} />
+        <NotesFileList files={files} level={level} />
       </div>
     </>
   );

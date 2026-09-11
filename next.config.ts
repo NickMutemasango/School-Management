@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_SUPABASE_ANON_KEY,
   },
+  // Hides the floating "N" dev-tools badge (route info / Turbopack promo) in
+  // `next dev` - framework chrome only, never shown in production builds anyway.
+  devIndicators: false,
 };
 
 export default nextConfig;
