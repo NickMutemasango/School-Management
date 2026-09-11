@@ -110,11 +110,11 @@ export async function deleteNote(noteId: string, level: string) {
 
   const { data: profile } = await admin
     .from("profiles")
-    .select("role")
+    .select("role, status")
     .eq("id", user.id)
     .single();
   const isOwner = note.teacher_id === user.id;
-  const isAdmin = profile?.role === "admin";
+  const isAdmin = profile?.role === "admin" && profile?.status === "active";
   if (!isOwner && !isAdmin) throw new Error("You can only delete your own notes.");
 
   await admin.storage.from(NOTES_BUCKET).remove([note.storage_path]);

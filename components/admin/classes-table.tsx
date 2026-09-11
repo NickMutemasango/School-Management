@@ -19,10 +19,12 @@ import {
 import { CLASS_LEVELS } from "@/lib/data/class-levels";
 import { SUBJECTS } from "@/lib/data/notes";
 import {
+  assignStudentToClass,
   assignTeacher,
   createClass,
   deleteClass,
   removeAssignment,
+  removeStudentFromClass,
   type CreateClassState,
 } from "@/app/admin/classes/actions";
 
@@ -38,6 +40,7 @@ export interface ClassGroup {
   level: string;
   section: string;
   assignments: ClassAssignment[];
+  students: StudentOption[];
 }
 
 export interface TeacherOption {
@@ -45,12 +48,21 @@ export interface TeacherOption {
   name: string;
 }
 
+export interface StudentOption {
+  id: string;
+  name: string;
+  regNumber: string;
+  /** Enrolled class level - only students at the same level as a class can join it. */
+  level: string;
+}
+
 interface ClassesTableProps {
   classes: ClassGroup[];
   teachers: TeacherOption[];
+  students: StudentOption[];
 }
 
-export function ClassesTable({ classes, teachers }: ClassesTableProps) {
+export function ClassesTable({ classes, teachers, students }: ClassesTableProps) {
   const groupedByLevel = React.useMemo(() => {
     const groups = new Map<string, ClassGroup[]>();
     for (const cls of classes) {
@@ -82,7 +94,7 @@ export function ClassesTable({ classes, teachers }: ClassesTableProps) {
             </CardHeader>
             <CardContent className="space-y-6 pt-6">
               {group.map((cls) => (
-                <ClassRow key={cls.id} cls={cls} teachers={teachers} />
+                <ClassRow key={cls.id} cls={cls} teachers={teachers} students={students} />
               ))}
             </CardContent>
           </Card>
@@ -143,7 +155,13 @@ function CreateClassCard() {
   );
 }
 
-function ClassRow({ cls, teachers }: { cls: ClassGroup; teachers: TeacherOption[] }) {
+interface ClassRowProps {
+  cls: ClassGroup;
+  teachers: TeacherOption[];
+  students: StudentOption[];
+}
+
+function ClassRow({ cls, teachers, students }: ClassRowProps) {
   const [confirmingDelete, setConfirmingDelete] = React.useState(false);
   const [isPending, startTransition] = React.useTransition();
   const [error, setError] = React.useState<string | null>(null);
@@ -223,6 +241,116 @@ function ClassRow({ cls, teachers }: { cls: ClassGroup; teachers: TeacherOption[
       )}
 
       <AssignTeacherForm classId={cls.id} teachers={teachers} />
+      <StudentMembership
+        classId={cls.id}
+        level={cls.level}
+        assigned={cls.students}
+        students={students}
+      />
+    </div>
+  );
+}
+
+interface StudentMembershipProps {
+  classId: string;
+  level: string;
+  assigned: StudentOption[];
+  students: StudentOption[];
+}
+
+/** Lets an admin place enrolled students into this class section. */
+function StudentMembership({ classId, level, assigned, students }: StudentMembershipProps) {
+  const [studentId, setStudentId] = React.useState("");
+  const [isPending, startTransition] = React.useTransition();
+  const [error, setError] = React.useState<string | null>(null);
+
+  const assignedIds = new Set(assigned.map((student) => student.id));
+  const choices = students.filter(
+    (student) => student.level === level && !assignedIds.has(student.id)
+  );
+
+  function addStudent() {
+    if (!studentId) return;
+    startTransition(async () => {
+      try {
+        await assignStudentToClass(classId, studentId);
+        setStudentId("");
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Something went wrong.");
+      }
+    });
+  }
+
+  function removeStudent(id: string) {
+    startTransition(async () => {
+      try {
+        await removeStudentFromClass(id);
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Something went wrong.");
+      }
+    });
+  }
+
+  return (
+    <div className="mt-4 border-t pt-3">
+      <p className="text-sm font-medium">Students ({assigned.length})</p>
+      <p className="text-muted-foreground mt-1 text-xs">
+        Students receive all subjects assigned to this class.
+      </p>
+
+      <div className="mt-2 space-y-1.5">
+        {assigned.map((student) => (
+          <div
+            key={student.id}
+            className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2"
+          >
+            <span className="text-sm">
+              {student.name} <span className="text-muted-foreground">· {student.regNumber}</span>
+            </span>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={isPending}
+              onClick={() => removeStudent(student.id)}
+            >
+              <X className="size-4" />
+            </Button>
+          </div>
+        ))}
+
+        {assigned.length === 0 && (
+          <p className="text-muted-foreground text-sm">No students in this class yet.</p>
+        )}
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-end gap-2">
+        <Select value={studentId} onValueChange={setStudentId}>
+          <SelectTrigger className="h-9 w-64" disabled={isPending || choices.length === 0}>
+            <SelectValue placeholder={choices.length ? "Add enrolled student" : "No students available"} />
+          </SelectTrigger>
+          <SelectContent>
+            {choices.map((student) => (
+              <SelectItem key={student.id} value={student.id}>
+                {student.name} · {student.regNumber}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Button size="sm" variant="outline" disabled={isPending || !studentId} onClick={addStudent}>
+          {isPending ? <Loader2 className="size-4 animate-spin" /> : <UserPlus className="size-4" />}
+          Add Student
+        </Button>
+      </div>
+
+      {error && (
+        <p className="mt-2 flex items-center gap-1 text-xs font-medium text-destructive">
+          <AlertCircle className="size-3.5 shrink-0" />
+          {error}
+        </p>
+      )}
     </div>
   );
 }
