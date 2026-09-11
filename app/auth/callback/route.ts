@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { PENDING_NAME_COOKIE } from "@/lib/auth/pending-name-cookie";
 import { notifyIfPending } from "@/lib/auth/notify-if-pending";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
 
@@ -24,19 +21,6 @@ export async function GET(request: Request) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error && data.user) {
-      // Self-updates to `profiles` are RLS-blocked (only admins can write),
-      // so the name application goes through the service-role client - it
-      // only ever touches the just-created user's own row.
-      const cookieStore = await cookies();
-      const pendingName = cookieStore.get(PENDING_NAME_COOKIE)?.value;
-      if (pendingName) {
-        await createAdminClient()
-          .from("profiles")
-          .update({ full_name: pendingName })
-          .eq("id", data.user.id);
-        cookieStore.delete(PENDING_NAME_COOKIE);
-      }
-
       await notifyIfPending(data.user.id, origin);
 
       return NextResponse.redirect(`${origin}${next ?? "/"}`);
