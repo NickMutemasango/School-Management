@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 import { createClient } from "@/lib/supabase/server";
 import type { CurrentUser } from "@/lib/navigation";
 
@@ -15,7 +17,12 @@ const ROLE_LABEL: Record<string, string> = {
  * portals, so callers only need the fallback for the brief window before a
  * redirect lands.
  */
-export async function getCurrentUser(): Promise<CurrentUser | null> {
+// `cache()`-wrapped: every portal page renders inside `PortalShell`, which
+// already calls this once for the sidebar/topbar - without memoizing, each
+// page's own call repeats the `auth.getUser()` network round-trip (a real
+// hit to Supabase's auth server, not a local check) and the profile query a
+// second time for the same request.
+export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -37,4 +44,4 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     email: profile.email,
     role: ROLE_LABEL[profile.role] ?? profile.role,
   };
-}
+});

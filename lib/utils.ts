@@ -15,6 +15,36 @@ export function formatCurrency(value: number) {
   }).format(value);
 }
 
+const EXTENSION_MIME_TYPES: Record<string, string> = {
+  pdf: "application/pdf",
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  gif: "image/gif",
+  webp: "image/webp",
+  svg: "image/svg+xml",
+  doc: "application/msword",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  xls: "application/vnd.ms-excel",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ppt: "application/vnd.ms-powerpoint",
+  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  txt: "text/plain",
+};
+
+/**
+ * Some browsers report an empty `File.type` for extensions they don't
+ * recognize, which Supabase Storage then serves back as
+ * application/octet-stream - a generic type browsers won't render inline
+ * (a PDF ends up downloading instead of previewing). Fall back to a
+ * lookup by extension so uploads still get a renderable content type.
+ */
+export function resolveUploadContentType(fileName: string, reportedType: string): string {
+  if (reportedType) return reportedType;
+  const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
+  return EXTENSION_MIME_TYPES[ext] ?? "application/octet-stream";
+}
+
 /** "245 KB", "1.2 MB" */
 export function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;

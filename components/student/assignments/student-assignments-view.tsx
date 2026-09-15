@@ -14,10 +14,8 @@ import {
 } from "@/lib/data/assignments";
 import {
   studentAssignmentStatus,
-  studentAssignmentsSeed,
   tallyByStatus,
   type StudentAssignment,
-  type StudentSubmission,
 } from "@/lib/data/student-assignments";
 
 type Filter = SubmissionStatus | "all";
@@ -43,16 +41,12 @@ const FILTERS: Array<{
 ];
 
 /**
- * Owns the student's assignment list so a submission updates the card behind
- * the dialog straight away.
- *
- * UI stage: seeded from mock records and held in `useState`. Swap the seed for
- * a query and `handleSubmit` for a mutation when the backend lands.
+ * Owns which assignment's submission dialog is open. The list itself comes
+ * from the server (`getAssignmentsForStudent`) and refreshes automatically
+ * when `submitAssignment`'s `revalidatePath` fires - no local copy to keep
+ * in sync.
  */
-export function StudentAssignmentsView() {
-  const [assignments, setAssignments] = React.useState<StudentAssignment[]>(
-    studentAssignmentsSeed
-  );
+export function StudentAssignmentsView({ assignments }: { assignments: StudentAssignment[] }) {
   const [filter, setFilter] = React.useState<Filter>("all");
   const [openId, setOpenId] = React.useState<string | null>(null);
 
@@ -67,12 +61,6 @@ export function StudentAssignmentsView() {
   );
 
   const active = assignments.find((a) => a.id === openId) ?? null;
-
-  function handleSubmit(assignmentId: string, submission: StudentSubmission) {
-    setAssignments((current) =>
-      current.map((a) => (a.id === assignmentId ? { ...a, submission } : a))
-    );
-  }
 
   if (assignments.length === 0) {
     return (
@@ -152,7 +140,6 @@ export function StudentAssignmentsView() {
         assignment={active}
         open={active !== null}
         onOpenChange={(open) => !open && setOpenId(null)}
-        onSubmit={handleSubmit}
       />
     </>
   );

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { X } from "lucide-react";
+import { Lock, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { WORDMARK_CLASS } from "@/lib/brand";
@@ -13,9 +13,11 @@ import { SidebarUser } from "./sidebar-user";
 interface AppSidebarProps {
   portal: PortalKey;
   user: CurrentUser | null;
+  /** Student portal only: gates nav items marked `requiresClassSelection`. */
+  hasSelectedClass?: boolean;
 }
 
-export function AppSidebar({ portal, user }: AppSidebarProps) {
+export function AppSidebar({ portal, user, hasSelectedClass = true }: AppSidebarProps) {
   const { brand, sections } = navByPortal[portal];
   const { openMobile, setOpenMobile, collapsed } = useSidebar();
   const BrandIcon = brand.icon;
@@ -80,7 +82,10 @@ export function AppSidebar({ portal, user }: AppSidebarProps) {
               <ul className="space-y-0.5">
                 {section.items.map((item) => (
                   <li key={item.href}>
-                    <SidebarLink item={item} />
+                    <SidebarLink
+                      item={item}
+                      disabled={item.requiresClassSelection && !hasSelectedClass}
+                    />
                   </li>
                 ))}
               </ul>
@@ -95,7 +100,7 @@ export function AppSidebar({ portal, user }: AppSidebarProps) {
   );
 }
 
-function SidebarLink({ item }: { item: NavItem }) {
+function SidebarLink({ item, disabled }: { item: NavItem; disabled?: boolean }) {
   const pathname = usePathname();
   const { setOpenMobile } = useSidebar();
   const Icon = item.icon;
@@ -103,6 +108,20 @@ function SidebarLink({ item }: { item: NavItem }) {
   const isActive =
     pathname === item.href ||
     (item.activePrefixes?.some((prefix) => pathname.startsWith(prefix)) ?? false);
+
+  if (disabled) {
+    return (
+      <span
+        title="Pick a class in My Class first"
+        aria-disabled="true"
+        className="flex cursor-not-allowed items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium text-slate-400 dark:text-slate-600"
+      >
+        <Icon className="size-4 shrink-0" />
+        <span className="truncate">{item.title}</span>
+        <Lock className="ml-auto size-3.5 shrink-0" aria-hidden />
+      </span>
+    );
+  }
 
   return (
     <Link

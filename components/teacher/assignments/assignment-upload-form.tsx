@@ -1,96 +1,53 @@
 "use client";
 
 import * as React from "react";
-import { CheckCircle2, ClipboardList, Loader2, Upload } from "lucide-react";
+import { useActionState } from "react";
+import { AlertCircle, CheckCircle2, ClipboardList, Loader2, Upload } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import { DateSelectField } from "@/components/shared/date-select-field";
-import type { Assignment } from "@/lib/data/assignments";
-import type { AssignedClass } from "@/lib/teacher/assigned-classes";
+import type { AssignedClassSubject } from "@/lib/teacher/assigned-classes";
+import { createAssignment, type CreateAssignmentState } from "@/app/teacher/assignments/actions";
 
 /**
  * Shared field chrome, matching `notes-upload-form.tsx` so the two teacher
- * upload tools read as one component. Kept as a constant rather than repeated
- * inline - the notes form predates this and repeats it five times.
+ * upload tools read as one component.
  */
 const FIELD =
   "bg-background h-11 rounded-lg border border-slate-200 px-3 text-sm shadow-sm outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-500/10 dark:border-slate-800";
 
-type Status = "idle" | "saving" | "done";
-
 interface AssignmentUploadFormProps {
-  /** Called with the new assignment once the mock save resolves. */
-  onCreate: (assignment: Assignment) => void;
-  assignedClasses: AssignedClass[];
+  assignedClassSubjects: AssignedClassSubject[];
+  /** Called with the new assignment's id once it's saved, so it can open straight away. */
+  onCreated: (id: string) => void;
 }
 
-/** Create-assignment UI only - no persistence yet. */
-export function AssignmentUploadForm({ onCreate, assignedClasses }: AssignmentUploadFormProps) {
-  const [title, setTitle] = React.useState("");
-  const [description, setDescription] = React.useState("");
-  const [classLevel, setClassLevel] = React.useState("");
-  const [dueOn, setDueOn] = React.useState("");
-  const [chosenFile, setChosenFile] = React.useState<string | null>(null);
-  const [status, setStatus] = React.useState<Status>("idle");
-  const [error, setError] = React.useState<string | null>(null);
+const initialState: CreateAssignmentState = { error: null };
 
+export function AssignmentUploadForm({ assignedClassSubjects, onCreated }: AssignmentUploadFormProps) {
+  const [state, formAction, isPending] = useActionState(createAssignment, initialState);
+  const [chosenFile, setChosenFile] = React.useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = React.useState(false);
+  // Bumped only on an actual success, unlike keying directly off
+  // `state.createdId` - that fell back to a fixed "new" on any *later*
+  // failed submission too, remounting the form (wiping whatever the teacher
+  // had just typed for the next assignment) even though nothing succeeded.
+  const [formKey, setFormKey] = React.useState(0);
   const titleRef = React.useRef<HTMLInputElement>(null);
 
-  const canSubmit =
-    title.trim() !== "" &&
-    classLevel !== "" &&
-    dueOn !== "" &&
-    status !== "saving";
-
-  /** Any edit clears the success banner so it can't go stale on screen. */
-  function touch() {
-    setStatus((s) => (s === "done" ? "idle" : s));
-    setError(null);
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-
-    if (title.trim() === "") {
-      setError("Give the assignment a title.");
-      titleRef.current?.focus();
-      return;
+  React.useEffect(() => {
+    if (state.createdId) {
+      onCreated(state.createdId);
+      setChosenFile(null);
+      setShowSuccess(true);
+      setFormKey((k) => k + 1);
     }
-    if (classLevel === "") {
-      setError("Choose the class this assignment is for.");
-      return;
-    }
-    if (dueOn === "") {
-      setError("Set a due date so students know the deadline.");
-      return;
-    }
+    // Only re-run when a fresh id comes back from the action.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.createdId]);
 
-    setError(null);
-    setStatus("saving");
-
-    // No backend yet - stand in for the create request.
-    await new Promise((resolve) => setTimeout(resolve, 900));
-
-    onCreate({
-      id: `asg_${Date.now()}`,
-      title: title.trim(),
-      description: description.trim(),
-      classLevel,
-      dueOn,
-      fileName: chosenFile ?? "",
-      submissions: [],
-    });
-
-    setStatus("done");
-    setTitle("");
-    setDescription("");
-    setClassLevel("");
-    setDueOn("");
-    setChosenFile(null);
-  }
-
-  const errorId = error ? "assignmentError" : undefined;
+  const errorId = state.error ? "assignmentError" : undefined;
 
   return (
     <section className="bg-card rounded-2xl border border-slate-200 p-5 dark:border-slate-800">
@@ -99,20 +56,24 @@ export function AssignmentUploadForm({ onCreate, assignedClasses }: AssignmentUp
         Create an assignment
       </h2>
 
-      <form onSubmit={handleSubmit} noValidate>
+      <form
+        // Remounts on every successful post, so DateSelectField's internal
+        // day/month/year state (and every other uncontrolled field) clears
+        // properly - a plain form.reset() can't reach into a controlled
+        // child component's own state.
+        key={formKey}
+        action={formAction}
+        onChange={() => setShowSuccess(false)}
+        noValidate
+      >
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="grid gap-2 sm:col-span-2">
             <Label htmlFor="assignmentTitle">Assignment Title</Label>
             <input
               ref={titleRef}
               id="assignmentTitle"
-              value={title}
-              onChange={(e) => {
-                setTitle(e.target.value);
-                touch();
-              }}
+              name="title"
               placeholder="e.g. Quadratic Equations — Problem Set 4"
-              aria-invalid={Boolean(error) && title.trim() === ""}
               aria-describedby={errorId}
               className={cn(FIELD, "w-full px-4 placeholder:text-slate-400")}
             />
@@ -122,23 +83,17 @@ export function AssignmentUploadForm({ onCreate, assignedClasses }: AssignmentUp
             <Label htmlFor="assignmentClass">Class</Label>
             <select
               id="assignmentClass"
-              value={classLevel}
-              onChange={(e) => {
-                setClassLevel(e.target.value);
-                touch();
-              }}
-              disabled={assignedClasses.length === 0}
-              aria-invalid={Boolean(error) && classLevel === ""}
+              name="classTeacherSubjectId"
+              disabled={assignedClassSubjects.length === 0}
               aria-describedby={errorId}
               className={FIELD}
             >
               <option value="">
-                {assignedClasses.length === 0 ? "No classes assigned yet" : "Select class"}
+                {assignedClassSubjects.length === 0 ? "No classes assigned yet" : "Select class"}
               </option>
-              {assignedClasses.map((cls) => (
-                <option key={cls.level} value={cls.level}>
-                  {cls.level}
-                  {cls.subjects.length > 0 ? ` (${cls.subjects.join(", ")})` : ""}
+              {assignedClassSubjects.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
                 </option>
               ))}
             </select>
@@ -146,12 +101,8 @@ export function AssignmentUploadForm({ onCreate, assignedClasses }: AssignmentUp
 
           <DateSelectField
             id="assignmentDueOn"
+            name="dueOn"
             label="Due Date"
-            value={dueOn}
-            onChange={(v) => {
-              setDueOn(v);
-              touch();
-            }}
             minYear={new Date().getFullYear()}
             maxYear={new Date().getFullYear() + 1}
           />
@@ -164,11 +115,7 @@ export function AssignmentUploadForm({ onCreate, assignedClasses }: AssignmentUp
           </Label>
           <textarea
             id="assignmentDescription"
-            value={description}
-            onChange={(e) => {
-              setDescription(e.target.value);
-              touch();
-            }}
+            name="description"
             rows={3}
             placeholder="What should students do, and what are you marking for?"
             className="bg-background w-full rounded-lg border border-slate-200 px-4 py-3 text-sm shadow-sm outline-none placeholder:text-slate-400 focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-500/10 dark:border-slate-800"
@@ -188,22 +135,20 @@ export function AssignmentUploadForm({ onCreate, assignedClasses }: AssignmentUp
             </span>
             <input
               type="file"
+              name="brief"
               className="sr-only"
               aria-label="Attach a brief for this assignment"
-              onChange={(e) => {
-                setChosenFile(e.target.files?.[0]?.name ?? null);
-                touch();
-              }}
+              onChange={(e) => setChosenFile(e.target.files?.[0]?.name ?? null)}
             />
           </label>
 
           <button
             type="submit"
-            disabled={!canSubmit}
-            aria-busy={status === "saving"}
+            disabled={isPending || assignedClassSubjects.length === 0}
+            aria-busy={isPending}
             className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus-visible:ring-4 focus-visible:ring-blue-500/30 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {status === "saving" ? (
+            {isPending ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
                 Posting&hellip;
@@ -214,17 +159,17 @@ export function AssignmentUploadForm({ onCreate, assignedClasses }: AssignmentUp
           </button>
         </div>
 
-        {error && (
+        {state.error && (
           <p
             id={errorId}
             role="alert"
             className="mt-3 text-sm font-medium text-red-600"
           >
-            {error}
+            {state.error}
           </p>
         )}
 
-        {status === "done" && (
+        {!state.error && showSuccess && (
           <p
             role="status"
             className="mt-3 flex items-center gap-2 text-sm font-medium text-emerald-600"

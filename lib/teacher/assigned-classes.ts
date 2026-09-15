@@ -43,3 +43,41 @@ export async function getAssignedClassesForTeacher(teacherId: string): Promise<A
     subjects: Array.from(subjectsByLevel.get(level)!),
   }));
 }
+
+export interface AssignedClassSubject {
+  /** `class_teacher_subject_id` - what assignments/timetable entries key off. */
+  id: string;
+  /** e.g. "GRADE 5 · A — Mathematics" */
+  label: string;
+}
+
+/**
+ * The teacher's own class-subject assignments, one per row (unlike
+ * `getAssignedClassesForTeacher`, which groups by level) - for pickers that
+ * need the exact `class_teacher_subject_id`, like posting an assignment.
+ */
+export async function getAssignedClassSubjectsForTeacher(
+  teacherId: string
+): Promise<AssignedClassSubject[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("class_teacher_subjects")
+    .select("id, subject, classes(level, section)")
+    .eq("teacher_id", teacherId)
+    .order("subject");
+
+  const rows = (data ?? []) as unknown as Array<{
+    id: string;
+    subject: string;
+    classes: { level: string; section: string } | null;
+  }>;
+
+  return rows
+    .filter((row): row is typeof row & { classes: NonNullable<typeof row.classes> } =>
+      Boolean(row.classes)
+    )
+    .map((row) => ({
+      id: row.id,
+      label: `${row.classes.level} · ${row.classes.section} — ${row.subject}`,
+    }));
+}

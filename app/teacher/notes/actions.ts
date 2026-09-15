@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { CLASS_LEVELS, levelSlug } from "@/lib/data/class-levels";
 import { SUBJECTS, EXAM_BODIES } from "@/lib/data/notes";
+import { resolveUploadContentType } from "@/lib/utils";
 
 const NOTES_BUCKET = "class-notes";
 
@@ -69,7 +70,7 @@ export async function uploadNote(
   const path = `${level}/${subject}/${crypto.randomUUID()}-${file.name}`;
   const { error: uploadError } = await admin.storage
     .from(NOTES_BUCKET)
-    .upload(path, file, { contentType: file.type });
+    .upload(path, file, { contentType: resolveUploadContentType(file.name, file.type) });
   if (uploadError) return { error: uploadError.message };
 
   const { error: insertError } = await admin.from("notes").insert({

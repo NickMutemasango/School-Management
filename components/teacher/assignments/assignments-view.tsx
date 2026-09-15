@@ -4,33 +4,33 @@ import * as React from "react";
 
 import { AssignmentUploadForm } from "./assignment-upload-form";
 import { AssignmentList } from "./assignment-list";
-import { assignmentsSeed, type Assignment } from "@/lib/data/assignments";
-import type { AssignedClass } from "@/lib/teacher/assigned-classes";
+import type { Assignment } from "@/lib/data/assignments";
+import type { AssignedClassSubject } from "@/lib/teacher/assigned-classes";
+
+interface AssignmentsViewProps {
+  assignedClassSubjects: AssignedClassSubject[];
+  assignments: Assignment[];
+}
 
 /**
- * Owns the assignment list so a posted assignment appears in the viewer
- * immediately - the form and the list are two halves of one workflow.
- *
- * UI stage: seeded from mock records and held in `useState`. Swap the seed for
- * a query and `handleCreate` for a mutation when the backend lands.
+ * Owns which assignment is expanded so posting one can open it straight
+ * away. The list itself comes from the server (`getAssignmentsForTeacher`)
+ * and refreshes automatically when `createAssignment`'s `revalidatePath`
+ * fires - no local copy to keep in sync.
  */
-export function AssignmentsView({ assignedClasses }: { assignedClasses: AssignedClass[] }) {
-  const [assignments, setAssignments] =
-    React.useState<Assignment[]>(assignmentsSeed);
-  const [openId, setOpenId] = React.useState<string | null>(
-    assignmentsSeed[0]?.id ?? null
-  );
+export function AssignmentsView({ assignedClassSubjects, assignments }: AssignmentsViewProps) {
+  const [openId, setOpenId] = React.useState<string | null>(assignments[0]?.id ?? null);
 
-  function handleCreate(assignment: Assignment) {
-    // Newest first, so a freshly posted assignment is visible without
-    // scrolling regardless of how far out its due date is.
-    setAssignments((current) => [assignment, ...current]);
-    setOpenId(assignment.id);
+  function handleCreated(id: string) {
+    setOpenId(id);
   }
 
   return (
     <div className="space-y-8">
-      <AssignmentUploadForm onCreate={handleCreate} assignedClasses={assignedClasses} />
+      <AssignmentUploadForm
+        assignedClassSubjects={assignedClassSubjects}
+        onCreated={handleCreated}
+      />
 
       <section>
         <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">

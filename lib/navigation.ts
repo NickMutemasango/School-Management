@@ -30,6 +30,8 @@ export interface NavItem {
    */
   activePrefixes?: string[];
   badge?: string;
+  /** Student-only: disabled until a subject is picked on My Class. */
+  requiresClassSelection?: boolean;
 }
 
 export interface NavSection {
@@ -99,7 +101,6 @@ export const studentNav: NavSection[] = [
         href: "/student/personal-details",
         icon: IdCard,
       },
-      { title: "My Class", href: "/student/class", icon: Users },
     ],
   },
   {
@@ -110,12 +111,14 @@ export const studentNav: NavSection[] = [
         href: "/student/notes",
         icon: BookOpen,
         activePrefixes: ["/student/notes"],
+        requiresClassSelection: true,
       },
       {
         title: "Assignments",
         href: "/student/assignments",
         icon: NotebookPen,
         activePrefixes: ["/student/assignments"],
+        requiresClassSelection: true,
       },
       { title: "Results", href: "/student/results", icon: FileText },
       { title: "Fees", href: "/student/fees", icon: Wallet },
