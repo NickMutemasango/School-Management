@@ -28,7 +28,7 @@ export default async function ClassesPage() {
   // profiles.id foreign key.
   const { data: assignmentsData } = await supabase
     .from("class_teacher_subjects")
-    .select("id, class_id, subject, teacher_id, profiles(full_name, email)");
+    .select("id, class_id, subject, teacher_id, policies, profiles(full_name, email)");
 
   const { data: teacherProfiles } = await supabase
     .from("profiles")
@@ -55,6 +55,7 @@ export default async function ClassesPage() {
     class_id: string;
     subject: string;
     teacher_id: string;
+    policies: string;
     profiles: { full_name: string; email: string } | null;
   }>;
 
@@ -66,6 +67,7 @@ export default async function ClassesPage() {
       teacherId: row.teacher_id,
       teacherName: row.profiles?.full_name || row.profiles?.email || "Unknown",
       subject: row.subject,
+      policies: row.policies,
     });
     assignmentsByClass.set(row.class_id, list);
   }

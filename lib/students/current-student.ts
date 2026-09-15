@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 import { createClient } from "@/lib/supabase/server";
 import type { StudentProfile, StudentStats } from "@/lib/data/student";
 
@@ -20,8 +22,12 @@ interface StudentRow {
   attendance_rate: number;
 }
 
+// `cache()`-wrapped for the same reason as `getCurrentUser` - several
+// student pages call this directly in addition to whatever PortalShell
+// already fetched, and each uncached call repeats a real network round-trip
+// to Supabase's auth server.
 /** The signed-in student's own `students` row, or null if signed out. */
-export async function getCurrentStudentRow(): Promise<StudentRow | null> {
+export const getCurrentStudentRow = cache(async (): Promise<StudentRow | null> => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -30,7 +36,7 @@ export async function getCurrentStudentRow(): Promise<StudentRow | null> {
 
   const { data } = await supabase.from("students").select("*").eq("id", user.id).single();
   return data;
-}
+});
 
 export function toStudentProfile(row: StudentRow): StudentProfile {
   return {

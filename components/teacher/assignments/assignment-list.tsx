@@ -4,7 +4,7 @@ import * as React from "react";
 import {
   ChevronDown,
   ClipboardList,
-  Download,
+  Eye,
   FileText,
   Paperclip,
   Users,
@@ -13,6 +13,7 @@ import {
 import { cn, formatDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/shared/empty-state";
+import { FilePreviewDialog } from "@/components/shared/file-preview-dialog";
 import {
   Table,
   TableBody,
@@ -22,7 +23,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  classSize,
   daysUntilDue,
   dueLabel,
   submissionStatus,
@@ -31,6 +31,7 @@ import {
   tallySubmissions,
   type Assignment,
 } from "@/lib/data/assignments";
+import { getAssignmentBriefUrl, getSubmissionDownloadUrl } from "@/lib/assignments/actions";
 
 interface AssignmentListProps {
   assignments: Assignment[];
@@ -89,12 +90,9 @@ function AssignmentRow({
   const days = daysUntilDue(assignment.dueOn);
   const isClosed = days !== null && days < 0;
   const isUrgent = days !== null && days >= 0 && days <= 1;
+  const [briefOpen, setBriefOpen] = React.useState(false);
 
   const panelId = `${assignment.id}-submissions`;
-  // Undefined until the class register is connected. Without a roster there is
-  // no meaningful denominator, so the count is shown on its own rather than as
-  // a misleading "0 of 0".
-  const roster = classSize(assignment.classLevel);
 
   return (
     <div className="bg-background overflow-hidden rounded-xl border border-slate-200 shadow-sm transition-shadow hover:shadow-md dark:border-slate-800">
@@ -113,7 +111,10 @@ function AssignmentRow({
           <span className="min-w-0 flex-1">
             <span className="block truncate font-medium">{assignment.title}</span>
             <span className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
-              <span className="font-medium">{assignment.classLevel}</span>
+              <span className="font-medium">
+                {assignment.classLevel}
+                {assignment.subject ? ` · ${assignment.subject}` : ""}
+              </span>
               <span aria-hidden className="text-slate-300 dark:text-slate-600">
                 ·
               </span>
@@ -131,9 +132,24 @@ function AssignmentRow({
                   <span aria-hidden className="text-slate-300 dark:text-slate-600">
                     ·
                   </span>
-                  <span className="inline-flex items-center gap-1">
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setBriefOpen(true);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setBriefOpen(true);
+                      }
+                    }}
+                    className="inline-flex items-center gap-1 text-blue-600 hover:underline dark:text-blue-400"
+                  >
                     <Paperclip className="size-3 shrink-0" aria-hidden />
-                    Brief attached
+                    View brief
                   </span>
                 </>
               )}
@@ -142,18 +158,10 @@ function AssignmentRow({
 
           <span className="hidden shrink-0 items-center gap-1.5 text-sm text-slate-500 sm:flex dark:text-slate-400">
             <Users className="size-4 shrink-0" aria-hidden />
-            {roster === undefined ? (
-              <span className="tabular-nums">
-                {tally.received} submission{tally.received === 1 ? "" : "s"}
-              </span>
-            ) : (
-              <>
-                <span className="tabular-nums">
-                  {tally.received} of {roster}
-                </span>
-                <span className="sr-only">submissions received</span>
-              </>
-            )}
+            <span className="tabular-nums">
+              {tally.received} of {assignment.classSize}
+            </span>
+            <span className="sr-only">submissions received</span>
           </span>
 
           {tally.late > 0 && (
@@ -171,6 +179,16 @@ function AssignmentRow({
           />
         </button>
       </h3>
+
+      {assignment.fileName && (
+        <FilePreviewDialog
+          open={briefOpen}
+          onOpenChange={setBriefOpen}
+          fileName={assignment.fileName}
+          loadPreviewUrl={() => getAssignmentBriefUrl(assignment.id)}
+          loadDownloadUrl={() => getAssignmentBriefUrl(assignment.id, true)}
+        />
+      )}
 
       {open && (
         <div
@@ -223,69 +241,87 @@ function AssignmentRow({
               </TableHeader>
 
               <TableBody>
-                {assignment.submissions.map((submission) => {
-                  const status = submissionStatus(
-                    submission.submittedOn,
-                    assignment.dueOn
-                  );
-                  const handedIn = status !== "pending";
-
-                  return (
-                    <TableRow key={submission.id}>
-                      <TableCell className="pl-4">
-                        <p className="font-medium">{submission.studentName}</p>
-                        <p className="text-muted-foreground font-mono text-xs">
-                          {submission.regNumber}
-                        </p>
-                      </TableCell>
-
-                      <TableCell className="text-muted-foreground tabular-nums">
-                        {handedIn ? formatDate(submission.submittedOn) : "—"}
-                      </TableCell>
-
-                      <TableCell>
-                        {handedIn ? (
-                          <Badge variant="secondary" className="max-w-[14rem]">
-                            <Paperclip className="shrink-0" aria-hidden />
-                            <span className="truncate">
-                              {submission.fileName}
-                            </span>
-                            <span className="text-muted-foreground shrink-0 font-normal">
-                              {submission.fileSizeLabel}
-                            </span>
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-
-                      <TableCell>
-                        <Badge variant={submissionStatusVariant.teacher[status]}>
-                          {submissionStatusLabel.teacher[status]}
-                        </Badge>
-                      </TableCell>
-
-                      <TableCell className="pr-4 text-right">
-                        {handedIn ? (
-                          <button
-                            type="button"
-                            aria-label={`Download ${submission.fileName} from ${submission.studentName}`}
-                            className="grid size-8 shrink-0 place-items-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:outline-none dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
-                          >
-                            <Download className="size-4" />
-                          </button>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                {assignment.submissions.map((submission) => (
+                  <SubmissionRow
+                    key={submission.id}
+                    submission={submission}
+                    dueOn={assignment.dueOn}
+                  />
+                ))}
               </TableBody>
             </Table>
           )}
         </div>
       )}
     </div>
+  );
+}
+
+function SubmissionRow({
+  submission,
+  dueOn,
+}: {
+  submission: Assignment["submissions"][number];
+  dueOn: string;
+}) {
+  const [previewOpen, setPreviewOpen] = React.useState(false);
+  const status = submissionStatus(submission.submittedOn, dueOn);
+  const handedIn = status !== "pending";
+
+  return (
+    <TableRow>
+      <TableCell className="pl-4">
+        <p className="font-medium">{submission.studentName}</p>
+        <p className="text-muted-foreground font-mono text-xs">{submission.regNumber}</p>
+      </TableCell>
+
+      <TableCell className="text-muted-foreground tabular-nums">
+        {handedIn ? formatDate(submission.submittedOn) : "—"}
+      </TableCell>
+
+      <TableCell>
+        {handedIn ? (
+          <Badge variant="secondary" className="max-w-[14rem]">
+            <Paperclip className="shrink-0" aria-hidden />
+            <span className="truncate">{submission.fileName}</span>
+            <span className="text-muted-foreground shrink-0 font-normal">
+              {submission.fileSizeLabel}
+            </span>
+          </Badge>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        )}
+      </TableCell>
+
+      <TableCell>
+        <Badge variant={submissionStatusVariant.teacher[status]}>
+          {submissionStatusLabel.teacher[status]}
+        </Badge>
+      </TableCell>
+
+      <TableCell className="pr-4 text-right">
+        {handedIn ? (
+          <>
+            <button
+              type="button"
+              aria-label={`Preview ${submission.fileName} from ${submission.studentName}`}
+              onClick={() => setPreviewOpen(true)}
+              className="grid size-8 shrink-0 place-items-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:outline-none dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+            >
+              <Eye className="size-4" />
+            </button>
+            <FilePreviewDialog
+              open={previewOpen}
+              onOpenChange={setPreviewOpen}
+              fileName={submission.fileName}
+              loadPreviewUrl={() => getSubmissionDownloadUrl(submission.id)}
+              loadDownloadUrl={() => getSubmissionDownloadUrl(submission.id, true)}
+            />
+          </>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        )}
+      </TableCell>
+    </TableRow>
   );
 }

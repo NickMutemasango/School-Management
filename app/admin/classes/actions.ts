@@ -80,10 +80,42 @@ export async function assignTeacher(classId: string, teacherId: string, subject:
   revalidatePath("/admin/classes");
 }
 
+/**
+ * `assignments`/`assignment_submissions` cascade-delete when this row goes
+ * (class_teacher_subject_id on delete cascade, migration 0011) - every
+ * assignment the teacher posted for this class-subject, and every
+ * student's submission of it, disappears too. Clean up their storage
+ * objects first (cascade only removes DB rows, not bucket files) so
+ * nothing is left orphaned.
+ */
 export async function removeAssignment(assignmentId: string) {
   await requireActiveAdmin();
 
   const admin = createAdminClient();
+
+  const { data: assignments } = await admin
+    .from("assignments")
+    .select("id, brief_storage_path")
+    .eq("class_teacher_subject_id", assignmentId);
+
+  if (assignments && assignments.length > 0) {
+    const { data: submissions } = await admin
+      .from("assignment_submissions")
+      .select("storage_path")
+      .in(
+        "assignment_id",
+        assignments.map((a) => a.id)
+      );
+
+    const paths = [
+      ...assignments.flatMap((a) => (a.brief_storage_path ? [a.brief_storage_path] : [])),
+      ...(submissions ?? []).map((s) => s.storage_path),
+    ];
+    if (paths.length > 0) {
+      await admin.storage.from("assignments").remove(paths);
+    }
+  }
+
   const { error } = await admin
     .from("class_teacher_subjects")
     .delete()
@@ -91,6 +123,25 @@ export async function removeAssignment(assignmentId: string) {
 
   if (error) throw new Error(error.message);
   revalidatePath("/admin/classes");
+  revalidatePath("/teacher/assignments");
+  revalidatePath("/student/assignments");
+}
+
+/** Shown to students on their class hub page - see migration 0012. */
+export async function updateClassPolicies(classTeacherSubjectId: string, policies: string) {
+  await requireActiveAdmin();
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("class_teacher_subjects")
+    .update({ policies })
+    .eq("id", classTeacherSubjectId);
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/classes");
+  // Policies are actually rendered on the hub page for this exact subject,
+  // not the /student/class listing itself.
+  revalidatePath(`/student/class/${classTeacherSubjectId}`);
 }
 
 /** Places an enrolled student into a class section - their subjects come from the class itself. */

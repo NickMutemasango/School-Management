@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useActionState } from "react";
 import {
   CalendarClock,
   CheckCircle2,
@@ -20,78 +21,74 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { FilePreviewDialog } from "@/components/shared/file-preview-dialog";
 import { dueLabel, daysUntilDue } from "@/lib/data/assignments";
 import {
   formatFileSize,
   studentAssignmentStatus,
   type StudentAssignment,
-  type StudentSubmission,
 } from "@/lib/data/student-assignments";
+import { submitAssignment, type SubmitAssignmentState } from "@/app/student/assignments/actions";
+import { getAssignmentBriefUrl, getSubmissionDownloadUrl } from "@/lib/assignments/actions";
 
 interface SubmissionDialogProps {
   assignment: StudentAssignment | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Hands the completed submission back to the list. */
-  onSubmit: (assignmentId: string, submission: StudentSubmission) => void;
 }
 
-export function SubmissionDialog({
+export function SubmissionDialog({ assignment, open, onOpenChange }: SubmissionDialogProps) {
+  // Remounts the form each time the dialog opens, so a previous attempt's
+  // error/pending state (held by useActionState, which has no external
+  // reset) can't leak into the next one.
+  const [instance, setInstance] = React.useState(0);
+  React.useEffect(() => {
+    if (open) setInstance((n) => n + 1);
+  }, [open]);
+
+  if (!assignment) return null;
+
+  return (
+    <SubmissionForm
+      key={instance}
+      assignment={assignment}
+      open={open}
+      onOpenChange={onOpenChange}
+    />
+  );
+}
+
+const initialState: SubmitAssignmentState = { error: null };
+
+function SubmissionForm({
   assignment,
   open,
   onOpenChange,
-  onSubmit,
-}: SubmissionDialogProps) {
+}: {
+  assignment: StudentAssignment;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const [state, formAction, isPending] = useActionState(submitAssignment, initialState);
   const [file, setFile] = React.useState<File | null>(null);
-  const [note, setNote] = React.useState("");
-  const [saving, setSaving] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+  const [note, setNote] = React.useState(assignment.submission?.note ?? "");
+  const [briefPreviewOpen, setBriefPreviewOpen] = React.useState(false);
+  const [submissionPreviewOpen, setSubmissionPreviewOpen] = React.useState(false);
+  const submittedRef = React.useRef(false);
 
-  // Reset whenever a different assignment is opened, so one submission's
-  // draft never leaks into the next.
   React.useEffect(() => {
-    if (open) {
-      setFile(null);
-      setNote(assignment?.submission?.note ?? "");
-      setSaving(false);
-      setError(null);
+    if (!isPending && submittedRef.current && !state.error) {
+      submittedRef.current = false;
+      onOpenChange(false);
     }
-  }, [open, assignment?.id, assignment?.submission?.note]);
-
-  if (!assignment) return null;
+    // Only re-check when a submission attempt finishes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPending, state.error]);
 
   const status = studentAssignmentStatus(assignment);
   const existing = assignment.submission;
   const isResubmit = existing !== null;
   const overdue = (daysUntilDue(assignment.dueOn) ?? 0) < 0;
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!assignment) return;
-
-    if (!file) {
-      setError("Choose a file to upload before submitting.");
-      return;
-    }
-
-    setError(null);
-    setSaving(true);
-
-    // No backend yet - stand in for the upload request.
-    await new Promise((resolve) => setTimeout(resolve, 900));
-
-    onSubmit(assignment.id, {
-      fileName: file.name,
-      fileSizeLabel: formatFileSize(file.size),
-      submittedOn: new Date().toISOString().slice(0, 10),
-      note: note.trim(),
-    });
-
-    setSaving(false);
-    onOpenChange(false);
-  }
-
-  const errorId = error ? "submissionError" : undefined;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -135,13 +132,23 @@ export function SubmissionDialog({
           </span>
 
           {assignment.briefFileName && (
-            <button
-              type="button"
-              className="inline-flex items-center gap-1.5 rounded-lg text-sm font-medium text-blue-600 transition-colors hover:text-blue-700 focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:outline-none dark:text-blue-400"
-            >
-              <Paperclip className="size-4 shrink-0" aria-hidden />
-              {assignment.briefFileName}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => setBriefPreviewOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg text-sm font-medium text-blue-600 transition-colors hover:text-blue-700 focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:outline-none dark:text-blue-400"
+              >
+                <Paperclip className="size-4 shrink-0" aria-hidden />
+                {assignment.briefFileName}
+              </button>
+              <FilePreviewDialog
+                open={briefPreviewOpen}
+                onOpenChange={setBriefPreviewOpen}
+                fileName={assignment.briefFileName}
+                loadPreviewUrl={() => getAssignmentBriefUrl(assignment.id)}
+                loadDownloadUrl={() => getAssignmentBriefUrl(assignment.id, true)}
+              />
+            </>
           )}
         </div>
 
@@ -153,7 +160,13 @@ export function SubmissionDialog({
             </p>
             <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-sm text-slate-600 dark:text-slate-300">
               <FileText className="size-4 shrink-0 text-slate-400" aria-hidden />
-              <span className="font-medium">{existing.fileName}</span>
+              <button
+                type="button"
+                onClick={() => setSubmissionPreviewOpen(true)}
+                className="font-medium text-blue-600 hover:underline dark:text-blue-400"
+              >
+                {existing.fileName}
+              </button>
               <span className="text-slate-400">·</span>
               <span>{existing.fileSizeLabel}</span>
               <span className="text-slate-400">·</span>
@@ -162,10 +175,26 @@ export function SubmissionDialog({
             <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
               Uploading again replaces this file.
             </p>
+            <FilePreviewDialog
+              open={submissionPreviewOpen}
+              onOpenChange={setSubmissionPreviewOpen}
+              fileName={existing.fileName}
+              loadPreviewUrl={() => getSubmissionDownloadUrl(existing.id)}
+              loadDownloadUrl={() => getSubmissionDownloadUrl(existing.id, true)}
+            />
           </div>
         )}
 
-        <form onSubmit={handleSubmit} noValidate className="space-y-4">
+        <form
+          action={formAction}
+          onSubmit={() => {
+            submittedRef.current = true;
+          }}
+          noValidate
+          className="space-y-4"
+        >
+          <input type="hidden" name="assignmentId" value={assignment.id} />
+
           <div className="grid gap-2">
             <Label htmlFor="submissionFile">
               {isResubmit ? "Replace your file" : "Your file"}
@@ -173,7 +202,7 @@ export function SubmissionDialog({
             <label
               className={cn(
                 "bg-background flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed px-4 py-5 text-center transition-colors hover:border-blue-400",
-                error && !file
+                state.error && !file
                   ? "border-red-400"
                   : "border-slate-300 dark:border-slate-700"
               )}
@@ -208,13 +237,10 @@ export function SubmissionDialog({
               <input
                 id="submissionFile"
                 type="file"
+                name="file"
                 className="sr-only"
-                aria-invalid={Boolean(error) && !file}
-                aria-describedby={errorId}
-                onChange={(e) => {
-                  setFile(e.target.files?.[0] ?? null);
-                  setError(null);
-                }}
+                aria-invalid={Boolean(state.error) && !file}
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
               />
             </label>
           </div>
@@ -226,6 +252,7 @@ export function SubmissionDialog({
             </Label>
             <textarea
               id="submissionNote"
+              name="note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={3}
@@ -234,13 +261,9 @@ export function SubmissionDialog({
             />
           </div>
 
-          {error && (
-            <p
-              id={errorId}
-              role="alert"
-              className="text-sm font-medium text-red-600"
-            >
-              {error}
+          {state.error && (
+            <p role="alert" className="text-sm font-medium text-red-600">
+              {state.error}
             </p>
           )}
 
@@ -254,7 +277,7 @@ export function SubmissionDialog({
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              disabled={saving}
+              disabled={isPending}
               className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 px-4 text-sm font-medium shadow-sm transition-colors hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:outline-none disabled:opacity-50 dark:border-slate-800 dark:hover:bg-slate-800"
             >
               Cancel
@@ -262,11 +285,11 @@ export function SubmissionDialog({
 
             <button
               type="submit"
-              disabled={saving}
-              aria-busy={saving}
+              disabled={isPending}
+              aria-busy={isPending}
               className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus-visible:ring-4 focus-visible:ring-blue-500/30 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {saving ? (
+              {isPending ? (
                 <>
                   <Loader2 className="size-4 animate-spin" aria-hidden />
                   Submitting&hellip;

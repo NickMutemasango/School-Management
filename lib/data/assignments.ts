@@ -1,14 +1,11 @@
 /**
  * Assignments contract.
  *
- * Types, the shared status vocabulary, and the due-date helpers — no teacher
- * records, matching the rest of `lib/data/`. Replace `assignmentsSeed` and
- * `CLASS_SIZES` with backend queries keyed by teacher id; keep the types as
- * the contract so the upload form and submissions viewer keep compiling.
- *
- * The student portal reads the status and date helpers from here too, so the
- * two sides can't drift — see `student-assignments.ts`, which does still ship
- * mock records for its own view.
+ * Types, the shared status vocabulary, and the due-date helpers. Records come
+ * from `lib/teacher/assignments.ts` (teacher side) and
+ * `lib/students/assignments.ts` (student side) - both read the status and
+ * date helpers from here too, so "Late" and "Due in 3 days" can't mean two
+ * different things across the portals.
  */
 
 /**
@@ -28,6 +25,7 @@ export type SubmissionStatus = "pending" | "submitted" | "late";
 export type StatusAudience = "teacher" | "student";
 
 export interface Submission {
+  /** `assignment_submissions.id` - needed to request a download link. */
   id: string;
   studentName: string;
   regNumber: string;
@@ -43,23 +41,14 @@ export interface Assignment {
   description: string;
   /** Class level from `CLASS_LEVELS`, e.g. "FORM 4". */
   classLevel: string;
+  subject: string;
   /** ISO due date. */
   dueOn: string;
   /** Attached brief, or "" when the assignment is description-only. */
   fileName: string;
   submissions: Submission[];
-}
-
-/**
- * Roster head-count per class level, so the viewer can show "12 of 28
- * submitted". Empty until the class register is connected - `classSize`
- * returns undefined and the viewer falls back to the number of submissions
- * actually received.
- */
-const CLASS_SIZES: Record<string, number> = {};
-
-export function classSize(level: string): number | undefined {
-  return CLASS_SIZES[level];
+  /** This class's roster size, so the viewer can show "12 of 28 submitted". */
+  classSize: number;
 }
 
 /**
@@ -183,10 +172,3 @@ export function dueLabel(dueOn: string, now = new Date()): string {
   if (days === -1) return "Closed yesterday";
   return `Closed ${Math.abs(days)} days ago`;
 }
-
-/**
- * Assignments set by the signed-in teacher. Empty until a backend is
- * connected - the viewer renders its empty state, and anything posted through
- * the form lives in `useState` for the session only.
- */
-export const assignmentsSeed: Assignment[] = [];

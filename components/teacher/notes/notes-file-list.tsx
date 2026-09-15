@@ -1,11 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { AlertCircle, BookOpen, Download, FileText, Loader2, Trash2 } from "lucide-react";
+import { AlertCircle, BookOpen, Eye, FileText, Loader2, Trash2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/shared/empty-state";
-import { examBodyClass, groupBySubject, type NoteFile } from "@/lib/data/notes";
+import { FilePreviewDialog } from "@/components/shared/file-preview-dialog";
+import { examBodyClass, fileNameWithExt, groupBySubject, type NoteFile } from "@/lib/data/notes";
 import { getNoteDownloadUrl } from "@/lib/notes/actions";
 import { deleteNote } from "@/app/teacher/notes/actions";
 
@@ -58,18 +59,7 @@ export function NotesFileList({ files, level }: { files: NoteFile[]; level: stri
 function FileRow({ file, level }: { file: NoteFile; level: string }) {
   const [isPending, startTransition] = React.useTransition();
   const [error, setError] = React.useState<string | null>(null);
-
-  function handleDownload() {
-    startTransition(async () => {
-      const { url, error: downloadError } = await getNoteDownloadUrl(file.id);
-      if (url) {
-        window.location.href = url;
-        setError(null);
-      } else {
-        setError(downloadError ?? "Could not download this file.");
-      }
-    });
-  }
+  const [previewOpen, setPreviewOpen] = React.useState(false);
 
   function handleDelete() {
     startTransition(async () => {
@@ -96,13 +86,12 @@ function FileRow({ file, level }: { file: NoteFile; level: string }) {
 
         <button
           type="button"
-          disabled={isPending}
-          onClick={handleDownload}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 disabled:opacity-50 dark:text-slate-300 dark:hover:bg-slate-800"
-          aria-label={`Download ${file.name}`}
+          onClick={() => setPreviewOpen(true)}
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+          aria-label={`Preview ${file.name}`}
         >
-          {isPending ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
-          <span className="hidden sm:inline">View</span>
+          <Eye className="size-4" />
+          <span className="hidden sm:inline">Preview</span>
         </button>
 
         <button
@@ -112,7 +101,7 @@ function FileRow({ file, level }: { file: NoteFile; level: string }) {
           className="grid size-8 shrink-0 place-items-center rounded-lg text-rose-500 transition-colors hover:bg-rose-50 disabled:opacity-50 dark:hover:bg-rose-950/30"
           aria-label={`Delete ${file.name}`}
         >
-          <Trash2 className="size-4" />
+          {isPending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
         </button>
       </div>
 
@@ -122,6 +111,14 @@ function FileRow({ file, level }: { file: NoteFile; level: string }) {
           {error}
         </p>
       )}
+
+      <FilePreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        fileName={fileNameWithExt(file)}
+        loadPreviewUrl={() => getNoteDownloadUrl(file.id)}
+        loadDownloadUrl={() => getNoteDownloadUrl(file.id, true)}
+      />
     </li>
   );
 }

@@ -25,6 +25,7 @@ import {
   deleteClass,
   removeAssignment,
   removeStudentFromClass,
+  updateClassPolicies,
   type CreateClassState,
 } from "@/app/admin/classes/actions";
 
@@ -33,6 +34,7 @@ export interface ClassAssignment {
   teacherId: string;
   teacherName: string;
   subject: string;
+  policies: string;
 }
 
 export interface ClassGroup {
@@ -208,24 +210,7 @@ function ClassRow({ cls, teachers, students }: ClassRowProps) {
 
       <div className="mt-3 space-y-2">
         {cls.assignments.map((assignment) => (
-          <div
-            key={assignment.id}
-            className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2"
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">{assignment.teacherName}</span>
-              <Badge variant="secondary">{assignment.subject}</Badge>
-            </div>
-            <Button
-              size="sm"
-              variant="ghost"
-              disabled={isPending}
-              title="Removing this also clears it from the timetable"
-              onClick={() => runAction(() => removeAssignment(assignment.id))}
-            >
-              <X className="size-4" />
-            </Button>
-          </div>
+          <AssignmentRow key={assignment.id} assignment={assignment} />
         ))}
 
         {cls.assignments.length === 0 && (
@@ -247,6 +232,103 @@ function ClassRow({ cls, teachers, students }: ClassRowProps) {
         assigned={cls.students}
         students={students}
       />
+    </div>
+  );
+}
+
+function AssignmentRow({ assignment }: { assignment: ClassAssignment }) {
+  const [isPending, startTransition] = React.useTransition();
+  const [error, setError] = React.useState<string | null>(null);
+  const [editingPolicies, setEditingPolicies] = React.useState(false);
+  const [policies, setPolicies] = React.useState(assignment.policies);
+
+  function runAction(action: () => Promise<void>) {
+    startTransition(async () => {
+      try {
+        await action();
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Something went wrong.");
+      }
+    });
+  }
+
+  return (
+    <div className="rounded-md bg-muted/50 px-3 py-2">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">{assignment.teacherName}</span>
+          <Badge variant="secondary">{assignment.subject}</Badge>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              // Reset the draft to the saved value every time the editor
+              // opens - otherwise a previously-discarded (Cancelled) edit
+              // silently reappears next time and can get saved by mistake.
+              setPolicies(assignment.policies);
+              setEditingPolicies((v) => !v);
+            }}
+            title="Edit the policies shown to students on their class page"
+          >
+            Policies
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={isPending}
+            title="Also removes its timetable entries, and permanently deletes every assignment (and student submission) posted for this class-subject"
+            onClick={() => runAction(() => removeAssignment(assignment.id))}
+          >
+            <X className="size-4" />
+          </Button>
+        </div>
+      </div>
+
+      {editingPolicies && (
+        <div className="mt-2 space-y-2">
+          <textarea
+            value={policies}
+            onChange={(e) => setPolicies(e.target.value)}
+            rows={3}
+            placeholder="e.g. Late homework loses 10% per day. Bring a calculator to every lesson."
+            className="bg-background w-full rounded-lg border px-3 py-2 text-sm shadow-sm outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-500/10"
+          />
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              disabled={isPending}
+              onClick={() =>
+                runAction(async () => {
+                  await updateClassPolicies(assignment.id, policies);
+                  setEditingPolicies(false);
+                })
+              }
+            >
+              {isPending ? <Loader2 className="size-4 animate-spin" /> : "Save"}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setPolicies(assignment.policies);
+                setEditingPolicies(false);
+              }}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <p className="mt-2 flex items-center gap-1 text-xs font-medium text-destructive">
+          <AlertCircle className="size-3.5 shrink-0" />
+          {error}
+        </p>
+      )}
     </div>
   );
 }

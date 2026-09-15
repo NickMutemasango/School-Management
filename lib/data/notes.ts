@@ -28,12 +28,37 @@ export const SUBJECTS = [
 
 export interface NoteFile {
   id: string;
+  /** Teacher-entered display name - may have no extension at all. */
   name: string;
   subject: string;
   examBody: ExamBody;
   /** Short display date, e.g. "18 Jun". */
   uploadedOn: string;
   sizeLabel: string;
+  /**
+   * Lowercase extension of the actual uploaded file (from `storage_path`,
+   * which keeps the original filename), e.g. "pdf" - `name` is a free-text
+   * label and can't be trusted to carry one.
+   */
+  fileExt: string;
+}
+
+/** `name` with its real extension appended, for anything that needs to
+ * infer file type (preview, download) rather than just display the label. */
+export function fileNameWithExt(file: Pick<NoteFile, "name" | "fileExt">): string {
+  if (!file.fileExt) return file.name;
+  return file.name.toLowerCase().endsWith(`.${file.fileExt}`) ? file.name : `${file.name}.${file.fileExt}`;
+}
+
+/**
+ * Lowercase extension from a storage path, or "" if the originally-uploaded
+ * file had no dot in its name at all - `path.split(".").pop()` would
+ * otherwise return the *entire path* in that case (there's nothing to split
+ * on), which then gets treated as a bogus "extension" everywhere it's used.
+ */
+export function extensionFromStoragePath(storagePath: string): string {
+  const ext = storagePath.split(".").pop()?.toLowerCase() ?? "";
+  return ext.includes("/") ? "" : ext;
 }
 
 export interface SubjectGroup {
