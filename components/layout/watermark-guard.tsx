@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-const HOST_CLASS = "nexus-watermark";
+const HOST_CLASS = "abantu-watermark";
 const HOST_FLAG = "data-watermark";
 const RECHECK_MS = 1500;
 
@@ -34,8 +34,8 @@ export function WatermarkGuard() {
       if (!host.classList.contains(HOST_CLASS)) {
         host.classList.add(HOST_CLASS);
       }
-      if (host.getAttribute(HOST_FLAG) !== "nexus") {
-        host.setAttribute(HOST_FLAG, "nexus");
+      if (host.getAttribute(HOST_FLAG) !== "abantu") {
+        host.setAttribute(HOST_FLAG, "abantu");
       }
 
       // Re-target when React has replaced the element under us.

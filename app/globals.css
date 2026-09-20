@@ -4,7 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Design tokens mirrored from the Innovate Institute administration portal.
+ * Design tokens mirrored from the ABANTU HUB administration portal.
  * Primary  = deep navy   oklch(30% 0.15 250)
  * Accent   = warm orange oklch(65% 0.20 45)  -> active nav, highlighted states
  */
@@ -174,7 +174,7 @@
  * fallback means the mark still renders if the variable is removed.
  * ------------------------------------------------------------------------- */
 :root {
-  --brand-watermark: "NEXUS";
+  --brand-watermark: "ABANTU HUB";
   /* Tuning knobs. Dark needs a slightly higher value than light for the same
      perceived weight, because white-on-near-black reads fainter than
      black-on-white at equal alpha. */
@@ -184,7 +184,7 @@
   --brand-watermark-opacity-print: 0.1;
 }
 
-.nexus-watermark {
+.abantu-watermark {
   position: relative !important;
   isolation: isolate !important;
   /* `clip` rather than `hidden`: no scroll container, so sticky/absolute
@@ -192,8 +192,8 @@
   overflow-x: clip;
 }
 
-.nexus-watermark::before {
-  content: var(--brand-watermark, "NEXUS") !important;
+.abantu-watermark::before {
+  content: var(--brand-watermark, "ABANTU HUB") !important;
   position: absolute !important;
   top: 12vh;
   left: 50%;
@@ -214,18 +214,18 @@
 }
 
 @media (min-width: 640px) {
-  .nexus-watermark::before {
+  .abantu-watermark::before {
     font-size: 18vw;
   }
 }
 
 @media (min-width: 1024px) {
-  .nexus-watermark::before {
+  .abantu-watermark::before {
     font-size: 15vw;
   }
 }
 
-.dark .nexus-watermark::before {
+.dark .abantu-watermark::before {
   color: oklch(100% 0 0);
   opacity: var(--brand-watermark-opacity-dark, 0.05) !important;
 }
@@ -233,7 +233,7 @@
 /* Survives Ctrl+P and "Save as PDF" - the paths a screenshot or leaked
    document actually takes. Pinned so it lands on every printed page. */
 @media print {
-  .nexus-watermark::before {
+  .abantu-watermark::before {
     position: fixed !important;
     top: 40% !important;
     font-size: 18vw;

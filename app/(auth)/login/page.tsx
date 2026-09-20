@@ -6,7 +6,7 @@ import { BRAND, WORDMARK_CLASS } from "@/lib/brand";
 
 export const metadata: Metadata = {
   title: "Sign In",
-  description: "Choose how you sign in to the Innovate Institute portal.",
+  description: "Choose how you sign in to the ABANTU HUB portal.",
 };
 
 const ROLES = [
