@@ -9,13 +9,13 @@
 
 export const BRAND = {
   /** Wordmark. Rendered uppercase; kept uppercase here so it reads the same in copy. */
-  name: "NEXUS",
+  name: "ABANTU HUB",
   /** Sits beside the wordmark in the default document title. */
   tagline: "School Management",
   description:
-    "NEXUS school management — student records, finance, teaching resources, and results in one portal.",
+    "ABANTU HUB school management — student records, finance, teaching resources, and results in one portal.",
   /** Footer legal line. */
-  copyright: "© NEXUS. All rights reserved.",
+  copyright: "© ABANTU HUB. All rights reserved.",
 } as const;
 
 /**
