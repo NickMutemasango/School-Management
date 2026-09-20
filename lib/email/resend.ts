@@ -31,7 +31,7 @@ export async function sendEmail({
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: process.env.RESEND_FROM_EMAIL ?? "Innovate Institute <onboarding@resend.dev>",
+      from: process.env.RESEND_FROM_EMAIL ?? "ABANTU HUB <onboarding@resend.dev>",
       to,
       subject,
       html,

@@ -38,8 +38,8 @@ export function PortalContent({ children, user, notification }: PortalContentPro
           child node - `relative isolate` there scopes its -z-10 to this well.
         */}
         <main
-          data-watermark="nexus"
-          className="nexus-watermark relative isolate mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-8 sm:py-8"
+          data-watermark="abantu"
+          className="abantu-watermark relative isolate mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-8 sm:py-8"
         >
           <Breadcrumbs />
           {children}

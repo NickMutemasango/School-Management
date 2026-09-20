@@ -1,6 +1,6 @@
-# Innovate Institute — School Management System (Frontend)
+# ABANTU HUB — School Management System
 
-Frontend-only recreation of the Innovate Institute administration portal. There is
+Frontend-only recreation of the ABANTU HUB administration portal. There is
 no backend and **no sample data** — every list, table, and chart renders its empty
 state until a data source is connected.
 
