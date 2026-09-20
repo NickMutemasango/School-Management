@@ -76,3 +76,25 @@ functions and cannot be passed from a server component into the client sidebar, 
 `components/shared/empty-state.tsx` is used by the charts; tables render an inline
 empty row. Both distinguish "no records at all" from "filtered to nothing" so the
 copy stays accurate once real data lands.
+
+## Environments
+
+| | Production | Development |
+| --- | --- | --- |
+| Branch | `main` | `develop` |
+| Domain | https://abantuhub.com | Vercel's auto-generated branch preview URL for `develop` |
+| Supabase project | `NEXUS` (`jdboaboyyvbtyxbuwxcc`) | `school-management-dev` (`ofqzikmfwpaaqdwjydyr`) |
+
+Vercel builds `main` as the Production deployment (aliased to `abantuhub.com`) and
+every other branch — including `develop` — as a Preview deployment. The `NEXT_SUPABASE_*`,
+`SUPABASE_SERVICE_ROLE_KEY`, and `STUDENT_AUTH_EMAIL_DOMAIN` env vars are scoped per
+Vercel environment (Production vs. Preview), so Preview deployments read and write the
+`school-management-dev` database and never touch production data.
+
+Feature branches should be cut from `develop` and merged back into it; promote
+`develop` → `main` via PR when a change is ready for production.
+
+The dev Supabase project was seeded by running `supabase link --project-ref
+ofqzikmfwpaaqdwjydyr` then `supabase db push` from this repo's `supabase/migrations/`.
+Run the same against a migration's target ref whenever schema changes need to reach
+the other environment.
