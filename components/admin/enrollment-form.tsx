@@ -151,7 +151,6 @@ export function EnrollmentForm() {
                 label="Phone Number"
                 type="tel"
                 placeholder="+263 7X XXX XXXX"
-                required
               />
               <Field
                 id="guardianEmail"

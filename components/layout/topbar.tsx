@@ -56,7 +56,7 @@ export function Topbar({ user, notification }: TopbarProps) {
             {notification.items.length === 0 ? (
               <div className="flex flex-col items-center gap-2 px-3 py-8 text-center">
                 <CheckCircle2 className="size-6 text-slate-300 dark:text-slate-600" />
-                <p className="text-sm text-slate-500 dark:text-slate-400">You're all caught up</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">You&apos;re all caught up</p>
               </div>
             ) : (
               <>

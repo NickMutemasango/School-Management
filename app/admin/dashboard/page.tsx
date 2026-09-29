@@ -35,7 +35,7 @@ export default async function DashboardPage() {
 
   const staff = staffData ?? [];
   const staffStats = {
-    total: staff.filter((s) => s.status !== "pending").length,
+    total: staff.filter((s) => s.status === "active").length,
     pending: staff.filter((s) => s.status === "pending").length,
     admins: staff.filter((s) => s.role === "admin" && s.status === "active").length,
     teachers: staff.filter((s) => s.role === "teacher" && s.status === "active").length,

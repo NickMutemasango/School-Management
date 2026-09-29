@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+
+  # Applies every migration from scratch to a throwaway Postgres and runs
+  # the pgTAP regression suite (supabase/tests/) against it - no app secrets
+  # needed, since this only touches the database, never the Next.js app
+  # itself. Exists so a policy regression like the one migration 0016 fixed
+  # (admin sees every school's data, not just their own) fails a PR instead
+  # of waiting to be caught by hand.
+  db-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: supabase db start
+      - run: supabase test db
