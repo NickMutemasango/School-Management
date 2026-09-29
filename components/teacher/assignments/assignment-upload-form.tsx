@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useActionState } from "react";
-import { AlertCircle, CheckCircle2, ClipboardList, Loader2, Upload } from "lucide-react";
+import { CheckCircle2, ClipboardList, Loader2, Upload } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";

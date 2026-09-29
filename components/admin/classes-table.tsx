@@ -115,7 +115,7 @@ function CreateClassCard() {
     <Card>
       <CardHeader className="border-b py-5">
         <CardTitle>Add Class</CardTitle>
-        <CardDescription>Create a new level and section, e.g. "Grade 5" · "A".</CardDescription>
+        <CardDescription>Create a new level and section, e.g. &quot;Grade 5&quot; · &quot;A&quot;.</CardDescription>
       </CardHeader>
       <CardContent className="pt-6">
         <form action={formAction} className="flex flex-wrap items-end gap-3">
