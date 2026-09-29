@@ -19,7 +19,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DateSelectField } from "@/components/shared/date-select-field";
-import { CLASS_LEVELS } from "@/lib/data/students";
 import { enrollStudent, type EnrollState } from "@/app/admin/students/enroll/actions";
 
 const initialState: EnrollState = { error: null, success: null };
@@ -27,9 +26,10 @@ const initialState: EnrollState = { error: null, success: null };
 /**
  * Creates a real student login (Supabase Auth account + `students` row) on
  * submit. The Fees section below isn't wired up yet - there's no invoices
- * table to assign a billing profile against.
+ * table to assign a billing profile against. `levels` are the school's
+ * activated curriculum levels (see /admin/levels) - no hard-coded enum.
  */
-export function EnrollmentForm() {
+export function EnrollmentForm({ levels }: { levels: string[] }) {
   const [state, formAction, isPending] = useActionState(enrollStudent, initialState);
 
   if (state.success) {
@@ -83,12 +83,14 @@ export function EnrollmentForm() {
 
               <div className="grid gap-2">
                 <Label htmlFor="classLevel">Class Level</Label>
-                <Select name="classLevel" required>
+                <Select name="classLevel" required disabled={levels.length === 0}>
                   <SelectTrigger id="classLevel">
-                    <SelectValue placeholder="Select class" />
+                    <SelectValue
+                      placeholder={levels.length === 0 ? "No levels activated yet" : "Select class"}
+                    />
                   </SelectTrigger>
                   <SelectContent>
-                    {CLASS_LEVELS.map((level) => (
+                    {levels.map((level) => (
                       <SelectItem key={level} value={level}>
                         {level}
                       </SelectItem>

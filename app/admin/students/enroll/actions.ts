@@ -4,7 +4,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireActiveAdmin } from "@/lib/auth/require-active-admin";
 import { studentAuthEmail } from "@/lib/auth/student-email";
 import { generateTempPassword } from "@/lib/auth/generate-password";
-import { CLASS_LEVELS } from "@/lib/data/students";
 
 export interface EnrollState {
   error: string | null;
@@ -26,7 +25,7 @@ export async function enrollStudent(
   _prev: EnrollState,
   formData: FormData
 ): Promise<EnrollState> {
-  await requireActiveAdmin();
+  const { schoolId } = await requireActiveAdmin();
 
   const firstName = String(formData.get("firstName") ?? "").trim();
   const lastName = String(formData.get("lastName") ?? "").trim();
@@ -42,11 +41,23 @@ export async function enrollStudent(
   if (!firstName || !lastName || !classLevel || !dateOfBirth || !enrolledOn || !guardianName) {
     return { error: "Fill in all required fields.", success: null };
   }
-  if (!(CLASS_LEVELS as readonly string[]).includes(classLevel)) {
-    return { error: "Select a valid class level.", success: null };
-  }
 
   const admin = createAdminClient();
+
+  // No hard-coded level enum: a student can only be enrolled at a level
+  // this school has activated (see /admin/levels).
+  const { data: offering } = await admin
+    .from("school_level_offerings")
+    .select("id, level_definitions!inner(display_label)")
+    .eq("school_id", schoolId)
+    .eq("status", "active")
+    .eq("academic_year", new Date().getFullYear())
+    .eq("level_definitions.display_label", classLevel)
+    .maybeSingle();
+
+  if (!offering) {
+    return { error: "Select a class level this school has activated.", success: null };
+  }
   const regNumber = await nextRegNumber(admin);
   const tempPassword = generateTempPassword();
   const fullName = `${firstName} ${lastName}`;
