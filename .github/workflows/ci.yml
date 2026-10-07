@@ -16,6 +16,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
+      - run: node scripts/check-level-definitions-sync.mjs
 
   # Applies every migration from scratch to a throwaway Postgres and runs
   # the pgTAP regression suite (supabase/tests/) against it - no app secrets

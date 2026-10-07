@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireActiveAdmin } from "@/lib/auth/require-active-admin";
-import { CLASS_LEVELS } from "@/lib/data/class-levels";
 import { SUBJECTS } from "@/lib/data/notes";
 
 /** Postgres unique-violation error code. */
@@ -23,7 +22,7 @@ export async function createClass(
   _prev: CreateClassState,
   formData: FormData
 ): Promise<CreateClassState> {
-  await requireActiveAdmin();
+  const { schoolId } = await requireActiveAdmin();
 
   const level = String(formData.get("level") ?? "");
   const section = String(formData.get("section") ?? "").trim();
@@ -31,11 +30,25 @@ export async function createClass(
   if (!level || !section) {
     return { error: "Select a level and enter a section." };
   }
-  if (!(CLASS_LEVELS as readonly string[]).includes(level)) {
-    return { error: "Select a valid class level." };
-  }
 
   const admin = createAdminClient();
+
+  // No hard-coded level enum: a class can only be created for a level this
+  // school has activated (see /admin/levels), scoped by school_id since the
+  // service-role client bypasses school_level_offerings_select_member.
+  const { data: offering } = await admin
+    .from("school_level_offerings")
+    .select("id, level_definitions!inner(display_label)")
+    .eq("school_id", schoolId)
+    .eq("status", "active")
+    .eq("academic_year", new Date().getFullYear())
+    .eq("level_definitions.display_label", level)
+    .maybeSingle();
+
+  if (!offering) {
+    return { error: "Select a level this school has activated." };
+  }
+
   const { error } = await admin.from("classes").insert({ level, section });
 
   if (error) {

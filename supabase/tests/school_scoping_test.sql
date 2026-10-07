@@ -1,24 +1,26 @@
--- Regression suite for migrations 0015-0018: proves the tenant-isolation
+-- Regression suite for migrations 0015-0019: proves the tenant-isolation
 -- claim (admin at School A can never see School B's rows, and vice versa),
 -- the suspended-admin lockout, the classes.school_level_offering_id sync
--- trigger, and (0018) that a teacher/student can't read the other school's
--- class notes when both schools happen to share a curriculum level label -
--- the same scenarios validated by hand against a local db reset before
--- these migrations were considered done, now made repeatable. Run with
--- `supabase test db`.
+-- trigger, (0018) that a teacher/student can't read the other school's
+-- class notes when both schools happen to share a curriculum level label,
+-- and (0019) that the same isolation still holds after the RLS-performance
+-- rewrite - the same scenarios validated by hand against a local db reset
+-- before these migrations were considered done, now made repeatable. Run
+-- with `supabase test db`.
 --
 -- School A is the school_id = ...0001 row seeded by 0015 itself, so this
--- file only has to create School B plus two admins. Only three of the
--- eleven policies migration 0016 tightened are exercised directly
--- (profiles, schools/organisations via current_user_school_id(), classes) -
--- the other eight (class_teacher_subjects, timetable_entries, notes,
--- assignments, assignment_submissions, student_class_memberships,
--- students_select_admin, students_update_admin) share the exact same
--- `current_user_role() = 'admin' and school_id = current_user_school_id()`
--- shape reviewed in that migration, not a separately-written condition per
--- table.
+-- file only has to create School B plus two admins. 7 of the 11 policies
+-- migration 0016 tightened are exercised directly (profiles_select_admin,
+-- classes_select_admin, students_select_admin, class_teacher_subjects_
+-- select_admin, timetable_entries_select_admin, assignments_select_admin,
+-- student_class_memberships_select_admin). Remaining untested:
+-- profiles_update_admin and students_update_admin (UPDATE-only, would need
+-- a separate mutation-side test), notes_select_admin and
+-- assignment_submissions_select_admin (SELECT, same shape as the 7 above -
+-- lower priority since that shape is now itself covered, not just asserted
+-- by comment).
 BEGIN;
-SELECT plan(24);
+SELECT plan(34);
 
 -- ---------------------------------------------------------------------
 -- Fixtures (run as the migration/superuser role, which bypasses RLS)
@@ -225,6 +227,65 @@ SELECT is(
   (select count(*) from public.notes where level = 'GRADE 5'), 1::bigint,
   'student at School B sees only School B''s GRADE 5 notes, not School A''s'
 );
+reset role;
+
+-- ---------------------------------------------------------------------
+-- Broader coverage for migration 0016's *_select_admin policies (and their
+-- 0019 rewrite): reuses the class_teacher_subjects/students fixtures from
+-- the notes section above. admin-A is reactivated here (suspended earlier
+-- in this file) since these checks need an active admin session.
+-- ---------------------------------------------------------------------
+
+update public.profiles set status = 'active' where id = '10000000-0000-0000-0000-0000000000a1';
+
+insert into public.timetable_entries (class_teacher_subject_id, teacher_id, class_id, day, period_id, room, school_id)
+select cts.id, cts.teacher_id, cts.class_id, 'Monday', 'p1', 'Room A', cts.school_id
+from public.class_teacher_subjects cts
+join public.classes c on c.id = cts.class_id
+where c.section = 'Scoping-A';
+
+insert into public.timetable_entries (class_teacher_subject_id, teacher_id, class_id, day, period_id, room, school_id)
+select cts.id, cts.teacher_id, cts.class_id, 'Monday', 'p1', 'Room B', cts.school_id
+from public.class_teacher_subjects cts
+join public.classes c on c.id = cts.class_id
+where c.section = 'B-Notes';
+
+insert into public.assignments (class_teacher_subject_id, title, due_on, school_id)
+select cts.id, 'Scoping test assignment A', current_date, cts.school_id
+from public.class_teacher_subjects cts
+join public.classes c on c.id = cts.class_id
+where c.section = 'Scoping-A';
+
+insert into public.assignments (class_teacher_subject_id, title, due_on, school_id)
+select cts.id, 'Scoping test assignment B', current_date, cts.school_id
+from public.class_teacher_subjects cts
+join public.classes c on c.id = cts.class_id
+where c.section = 'B-Notes';
+
+insert into public.student_class_memberships (student_id, class_id, school_id)
+select '10000000-0000-0000-0000-0000000000c1', c.id, c.school_id
+from public.classes c where c.section = 'Scoping-A';
+
+insert into public.student_class_memberships (student_id, class_id, school_id)
+select '10000000-0000-0000-0000-0000000000d1', c.id, c.school_id
+from public.classes c where c.section = 'B-Notes';
+
+set local role authenticated;
+select set_config('request.jwt.claims', json_build_object('sub', '10000000-0000-0000-0000-0000000000a1', 'role', 'authenticated')::text, true);
+SELECT is((select count(*) from public.students), 1::bigint, 'admin A sees only School A''s student via students_select_admin');
+SELECT is((select count(*) from public.class_teacher_subjects), 1::bigint, 'admin A sees only School A''s teaching assignment');
+SELECT is((select count(*) from public.timetable_entries), 1::bigint, 'admin A sees only School A''s timetable entry');
+SELECT is((select count(*) from public.assignments), 1::bigint, 'admin A sees only School A''s assignment');
+SELECT is((select count(*) from public.student_class_memberships), 1::bigint, 'admin A sees only School A''s class membership');
+reset role;
+
+set local role authenticated;
+select set_config('request.jwt.claims', json_build_object('sub', '10000000-0000-0000-0000-0000000000b1', 'role', 'authenticated')::text, true);
+SELECT is((select count(*) from public.students), 1::bigint, 'admin B sees only School B''s student via students_select_admin');
+SELECT is((select count(*) from public.class_teacher_subjects), 1::bigint, 'admin B sees only School B''s teaching assignment');
+SELECT is((select count(*) from public.timetable_entries), 1::bigint, 'admin B sees only School B''s timetable entry');
+SELECT is((select count(*) from public.assignments), 1::bigint, 'admin B sees only School B''s assignment');
+SELECT is((select count(*) from public.student_class_memberships), 1::bigint, 'admin B sees only School B''s class membership');
 reset role;
 
 SELECT * FROM finish();

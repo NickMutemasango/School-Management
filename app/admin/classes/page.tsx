@@ -37,7 +37,7 @@ export default async function ClassesPage() {
     .eq("status", "active")
     .order("full_name");
 
-  const [{ data: studentsData }, { data: membershipsData }] = await Promise.all([
+  const [{ data: studentsData }, { data: membershipsData }, { data: offeringsData }] = await Promise.all([
     supabase
       .from("students")
       .select("id, first_name, last_name, reg_number, class_level")
@@ -45,7 +45,22 @@ export default async function ClassesPage() {
       .order("first_name")
       .order("last_name"),
     supabase.from("student_class_memberships").select("student_id, class_id"),
+    // school_level_offerings' RLS already scopes this to the caller's own
+    // school - see /admin/levels for where a school activates a level.
+    supabase
+      .from("school_level_offerings")
+      .select("level_definitions(display_label, sort_order)")
+      .eq("academic_year", new Date().getFullYear())
+      .eq("status", "active"),
   ]);
+
+  const offeringRows = (offeringsData ?? []) as unknown as Array<{
+    level_definitions: { display_label: string; sort_order: number } | null;
+  }>;
+  const levels = offeringRows
+    .filter((row) => row.level_definitions !== null)
+    .sort((a, b) => a.level_definitions!.sort_order - b.level_definitions!.sort_order)
+    .map((row) => row.level_definitions!.display_label);
 
   // The untyped client (no generated Database schema) can't infer that
   // `teacher_id` is a single FK, not a reverse relation, so it types the
@@ -108,7 +123,7 @@ export default async function ClassesPage() {
         title="Classes"
         description="Create class sections and assign teachers to the subjects they teach."
       />
-      <ClassesTable classes={classes} teachers={teachers} students={students} />
+      <ClassesTable classes={classes} teachers={teachers} students={students} levels={levels} />
     </>
   );
 }

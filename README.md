@@ -77,6 +77,25 @@ functions and cannot be passed from a server component into the client sidebar, 
 empty row. Both distinguish "no records at all" from "filtered to nothing" so the
 copy stays accurate once real data lands.
 
+## Local development
+
+`npm run dev` reads `.env.development.local` (if present) before `.env.local`,
+so local development can run against a local Supabase instance instead of
+the production database `.env.local` points at (see Environments below).
+
+```bash
+supabase start                                                    # local Supabase stack
+supabase db reset                                                 # apply every migration fresh
+node --env-file=.env.development.local scripts/seed-local-dev.mjs # teachers, classes, students
+```
+
+`scripts/seed-local-dev.mjs` activates a handful of curriculum levels,
+creates classes, teachers with subject/timetable assignments, and enrolls
+students into their sections - enough to click through every admin/teacher/
+student screen with connected data. It refuses to run against anything but
+a local Supabase URL. `scripts/seed-mock-students.mjs` is a narrower
+alternative that only adds students to whatever classes already exist.
+
 ## Environments
 
 | | Production | Development |
