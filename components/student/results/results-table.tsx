@@ -11,10 +11,11 @@ import {
   gradeForMark,
   gradeToneClass,
   isPass,
+  type GradeBand,
   type SubjectResult,
 } from "@/lib/data/student-results";
 
-export function ResultsTable({ subjects }: { subjects: SubjectResult[] }) {
+export function ResultsTable({ subjects, bands }: { subjects: SubjectResult[]; bands: GradeBand[] }) {
   return (
     <div className="bg-background overflow-hidden rounded-2xl border border-slate-200 shadow-sm dark:border-slate-800">
       <Table>
@@ -30,7 +31,7 @@ export function ResultsTable({ subjects }: { subjects: SubjectResult[] }) {
 
         <TableBody>
           {subjects.map((s) => {
-            const grade = gradeForMark(s.mark);
+            const grade = gradeForMark(s.mark, bands);
             return (
               <TableRow key={s.id}>
                 <TableCell className="pl-6 font-medium">{s.subject}</TableCell>
@@ -38,7 +39,7 @@ export function ResultsTable({ subjects }: { subjects: SubjectResult[] }) {
                 <TableCell
                   className={cn(
                     "text-right font-semibold tabular-nums",
-                    isPass(s.mark) ? "text-emerald-600" : "text-rose-600"
+                    isPass(s.mark, bands) ? "text-emerald-600" : "text-rose-600"
                   )}
                 >
                   {s.mark}%

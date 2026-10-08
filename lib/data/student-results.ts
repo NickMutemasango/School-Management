@@ -1,14 +1,24 @@
 /**
  * Student results data contract.
  *
- * The grade scale is configuration (ZIMSEC-style bands) and stays populated;
  * `termResults` holds the actual marks and is empty until a backend exists.
+ * The grade scale itself now lives in the grade_bands table (migration
+ * 0023, editable at /admin/settings) - lib/admin/grade-bands.ts is the real
+ * source, this file's DEFAULT_GRADE_BANDS is only a fallback for callers
+ * that don't pass bands through (and the value every school is seeded
+ * with, so results render identically until an admin changes them).
  */
 
 export type Grade = "A" | "B" | "C" | "D" | "E" | "U";
 
-/** Lower bound of each grade band, highest first. */
-const GRADE_BANDS: { grade: Grade; min: number }[] = [
+export interface GradeBand {
+  grade: Grade;
+  /** Lower bound (inclusive) of this band, as a percentage. */
+  min: number;
+}
+
+/** Highest first - gradeForMark/isPass depend on this order. */
+export const DEFAULT_GRADE_BANDS: GradeBand[] = [
   { grade: "A", min: 75 },
   { grade: "B", min: 65 },
   { grade: "C", min: 50 },
@@ -17,13 +27,14 @@ const GRADE_BANDS: { grade: Grade; min: number }[] = [
   { grade: "U", min: 0 },
 ];
 
-export function gradeForMark(mark: number): Grade {
-  return GRADE_BANDS.find((b) => mark >= b.min)?.grade ?? "U";
+export function gradeForMark(mark: number, bands: GradeBand[] = DEFAULT_GRADE_BANDS): Grade {
+  return bands.find((b) => mark >= b.min)?.grade ?? "U";
 }
 
-/** A pass is grade C or better. */
-export function isPass(mark: number) {
-  return mark >= 50;
+/** A pass is grade C or better - derived from the bands' own C threshold. */
+export function isPass(mark: number, bands: GradeBand[] = DEFAULT_GRADE_BANDS) {
+  const cThreshold = bands.find((b) => b.grade === "C")?.min ?? 50;
+  return mark >= cThreshold;
 }
 
 export const gradeToneClass: Record<Grade, string> = {

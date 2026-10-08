@@ -2,7 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import { Award, BookOpen, Medal, TrendingUp } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { isPass, type TermResult } from "@/lib/data/student-results";
+import { isPass, type GradeBand, type TermResult } from "@/lib/data/student-results";
 
 interface SummaryTile {
   label: string;
@@ -13,8 +13,8 @@ interface SummaryTile {
   valueTone?: string;
 }
 
-export function ResultsSummary({ term }: { term: TermResult }) {
-  const passes = term.subjects.filter((s) => isPass(s.mark)).length;
+export function ResultsSummary({ term, bands }: { term: TermResult; bands: GradeBand[] }) {
+  const passes = term.subjects.filter((s) => isPass(s.mark, bands)).length;
 
   const tiles: SummaryTile[] = [
     {

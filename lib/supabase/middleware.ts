@@ -5,11 +5,12 @@ const PORTAL_HOME: Record<string, string> = {
   admin: "/admin",
   teacher: "/teacher",
   student: "/student",
+  parent: "/parent",
 };
 
 /**
  * Refreshes the auth session on every request (required for SSR cookie-based
- * auth to stay in sync) and guards the three portals by the signed-in user's
+ * auth to stay in sync) and guards the four portals by the signed-in user's
  * role, which lives in `profiles` rather than the JWT.
  */
 export async function updateSession(request: NextRequest) {
@@ -42,7 +43,7 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
   const isAuthRoute = pathname === "/login" || pathname.startsWith("/login/");
-  const portalMatch = pathname.match(/^\/(admin|teacher|student)(\/|$)/);
+  const portalMatch = pathname.match(/^\/(admin|teacher|student|parent)(\/|$)/);
 
   if (!user) {
     if (portalMatch) {

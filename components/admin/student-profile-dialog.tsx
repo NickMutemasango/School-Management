@@ -1,12 +1,19 @@
 ﻿"use client";
 
+import * as React from "react";
+import { useActionState } from "react";
 import {
+  AlertCircle,
   CalendarDays,
+  CheckCircle2,
+  ChevronDown,
   Home,
+  Loader2,
   Mail,
   Phone,
   ShieldCheck,
   TrendingUp,
+  UserPlus,
   Wallet,
 } from "lucide-react";
 
@@ -18,9 +25,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import {
+  deregisterStudent,
+  inviteGuardian,
+  reinstateStudent,
+  suspendStudent,
+  type InviteGuardianState,
+} from "@/app/admin/students/actions";
 import {
   enrollmentStatusLabel,
   enrollmentStatusVariant,
@@ -39,9 +59,24 @@ export function StudentProfileDialog({
   open,
   onOpenChange,
 }: StudentProfileDialogProps) {
+  const [isPending, startTransition] = React.useTransition();
+  const [error, setError] = React.useState<string | null>(null);
+
   if (!student) return null;
 
   const fullName = `${student.firstName} ${student.lastName}`;
+
+  function runStatusAction(action: () => Promise<void>) {
+    startTransition(async () => {
+      try {
+        await action();
+        setError(null);
+        onOpenChange(false);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Something went wrong.");
+      }
+    });
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -129,14 +164,56 @@ export function StudentProfileDialog({
               <DetailRow icon={Phone} label="Phone" value={student.guardianPhone} />
               <DetailRow icon={Mail} label="Email" value={student.guardianEmail} />
             </dl>
+            <InviteGuardianButton studentId={student.id} />
           </section>
         </div>
+
+        {error && (
+          <p className="flex items-center gap-1.5 text-sm font-medium text-destructive">
+            <AlertCircle className="size-4 shrink-0" />
+            {error}
+          </p>
+        )}
 
         <DialogFooter className="pt-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Close
           </Button>
-          <Button variant="accent">Edit Record</Button>
+          {student.status !== "deregistered" && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="accent" disabled={isPending}>
+                  {isPending ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <ChevronDown className="size-4" />
+                  )}
+                  Change Status
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {student.status === "active" ? (
+                  <DropdownMenuItem
+                    onClick={() => runStatusAction(() => suspendStudent(student.id))}
+                  >
+                    Mark Inactive
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem
+                    onClick={() => runStatusAction(() => reinstateStudent(student.id))}
+                  >
+                    Reinstate
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => runStatusAction(() => deregisterStudent(student.id))}
+                >
+                  Deregister
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -182,5 +259,33 @@ function DetailRow({
         <dd className="text-sm font-medium break-words">{value}</dd>
       </div>
     </div>
+  );
+}
+
+const inviteInitialState: InviteGuardianState = { error: null, success: false };
+
+function InviteGuardianButton({ studentId }: { studentId: string }) {
+  const [state, formAction, isPending] = useActionState(inviteGuardian, inviteInitialState);
+
+  return (
+    <form action={formAction} className="mt-4">
+      <input type="hidden" name="studentId" value={studentId} />
+      <Button type="submit" variant="outline" size="sm" disabled={isPending || state.success}>
+        {isPending ? (
+          <Loader2 className="size-4 animate-spin" />
+        ) : state.success ? (
+          <CheckCircle2 className="size-4" />
+        ) : (
+          <UserPlus className="size-4" />
+        )}
+        {state.success ? "Invite Sent" : "Invite Guardian"}
+      </Button>
+      {state.error && (
+        <p className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-destructive">
+          <AlertCircle className="size-3.5 shrink-0" />
+          {state.error}
+        </p>
+      )}
+    </form>
   );
 }

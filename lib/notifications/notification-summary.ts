@@ -18,17 +18,29 @@ const RECENT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_ITEMS = 6;
 
 /**
- * Live-computed, not persisted - there's no notifications table, so nothing
- * is markable "read". Items are just what currently needs attention: for
- * admins, pending staff approvals + classes with no teacher assigned
- * (mirrors /admin/dashboard); for teachers, class/subject assignments made
- * in the last 7 days.
+ * Items are still live-computed, not stored as rows - what needs attention
+ * for admins (pending staff + unassigned classes, mirrors /admin/dashboard),
+ * teachers (recent class/subject assignments), and students (recently
+ * published results) is recomputed from the underlying tables every render.
+ * notification_reads (migration 0022) only tracks which of those computed
+ * keys this user has already dismissed, so a read item stays dismissed
+ * instead of reappearing.
  */
 export async function getNotificationSummary(
   portal: PortalKey,
   userId: string
 ): Promise<NotificationSummary> {
   const supabase = await createClient();
+
+  const { data: readRows } = await supabase
+    .from("notification_reads")
+    .select("notification_key")
+    .eq("user_id", userId);
+  const readKeys = new Set((readRows ?? []).map((r) => r.notification_key));
+
+  function unread(items: NotificationItem[]): NotificationItem[] {
+    return items.filter((item) => !readKeys.has(item.id));
+  }
 
   if (portal === "admin") {
     const [{ data: pendingStaff }, { data: classesData }, { data: assignmentsData }] = await Promise.all([
@@ -62,9 +74,10 @@ export async function getNotificationSummary(
       });
     }
 
+    const visible = unread(items);
     return {
-      count: pending.length + classesWithoutTeacher,
-      items: items.slice(0, MAX_ITEMS),
+      count: visible.length,
+      items: visible.slice(0, MAX_ITEMS),
       viewAllHref: "/admin/dashboard",
     };
   }
@@ -95,8 +108,33 @@ export async function getNotificationSummary(
       href: "/teacher",
     }));
 
-    return { count: items.length, items: items.slice(0, MAX_ITEMS), viewAllHref: "/teacher" };
+    const visible = unread(items);
+    return { count: visible.length, items: visible.slice(0, MAX_ITEMS), viewAllHref: "/teacher" };
   }
 
-  return { count: 0, items: [], viewAllHref: "/student" };
+  // Student: recently published subject results.
+  const since = new Date(Date.now() - RECENT_WINDOW_MS).toISOString();
+  const { data } = await supabase
+    .from("subject_results")
+    .select("id, term, updated_at, class_teacher_subjects(subject)")
+    .eq("student_id", userId)
+    .gte("updated_at", since)
+    .order("updated_at", { ascending: false });
+
+  const rows = (data ?? []) as unknown as Array<{
+    id: string;
+    term: string;
+    class_teacher_subjects: { subject: string } | null;
+  }>;
+
+  const items: NotificationItem[] = rows.map((row) => ({
+    id: row.id,
+    message: row.class_teacher_subjects
+      ? `Your ${row.class_teacher_subjects.subject} result for ${row.term} was published`
+      : `Your result for ${row.term} was published`,
+    href: "/student/results",
+  }));
+
+  const visible = unread(items);
+  return { count: visible.length, items: visible.slice(0, MAX_ITEMS), viewAllHref: "/student/results" };
 }

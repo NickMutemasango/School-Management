@@ -1,19 +1,32 @@
 import type { Metadata } from "next";
-import { Settings as PageIcon } from "lucide-react";
 
-import { ModulePlaceholder } from "@/components/shared/module-placeholder";
+import { PageHeader } from "@/components/shared/page-header";
+import { SchoolProfileForm } from "@/components/admin/settings/school-profile-form";
+import { GradeBandsForm } from "@/components/admin/settings/grade-bands-form";
+import { NotificationPreferencesForm } from "@/components/admin/settings/notification-preferences-form";
+import { getSchoolSettings } from "@/lib/admin/school-settings";
+import { getGradeBands } from "@/lib/admin/grade-bands";
 
 export const metadata: Metadata = {
   title: "Settings · Administration",
-  description: "Account and portal settings.",
+  description: "School profile, grading bands, and notification preferences.",
 };
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const [settings, bands] = await Promise.all([getSchoolSettings(), getGradeBands()]);
+
   return (
-    <ModulePlaceholder
-      icon={PageIcon}
-      title="Settings"
-      description="Portal configuration and preferences."
-    />
+    <>
+      <PageHeader
+        title="Settings"
+        description="School profile, grading bands, and notification preferences."
+      />
+
+      <div className="space-y-6">
+        <SchoolProfileForm settings={settings} />
+        <GradeBandsForm bands={bands} />
+        <NotificationPreferencesForm notifyAdminsOnStaffSignup={settings.notifyAdminsOnStaffSignup} />
+      </div>
+    </>
   );
 }

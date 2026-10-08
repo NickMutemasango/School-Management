@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   Upload,
   Users,
+  UsersRound,
   Wallet,
 } from "lucide-react";
 
@@ -128,7 +129,19 @@ export const studentNav: NavSection[] = [
   },
 ];
 
-export type PortalKey = "admin" | "teacher" | "student";
+export const parentNav: NavSection[] = [
+  {
+    label: "Main Menu",
+    items: [
+      { title: "Dashboard", href: "/parent", icon: House },
+      { title: "Results", href: "/parent/results", icon: FileText },
+      { title: "Fees", href: "/parent/fees", icon: Wallet },
+      { title: "Class Notes", href: "/parent/notes", icon: BookOpen },
+    ],
+  },
+];
+
+export type PortalKey = "admin" | "teacher" | "student" | "parent";
 
 export interface PortalBrand {
   /** Wordmark shown beside the logo in the sidebar header. */
@@ -164,5 +177,9 @@ export const navByPortal: Record<
   student: {
     brand: { title: BRAND.name, subtitle: "Student", icon: ShieldCheck },
     sections: studentNav,
+  },
+  parent: {
+    brand: { title: BRAND.name, subtitle: "Guardian", icon: UsersRound },
+    sections: parentNav,
   },
 };

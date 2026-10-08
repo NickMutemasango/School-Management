@@ -8,6 +8,7 @@ const ROLE_LABEL: Record<string, string> = {
   admin: "Super Admin",
   teacher: "Teacher",
   student: "Student",
+  parent: "Guardian",
 };
 
 /**

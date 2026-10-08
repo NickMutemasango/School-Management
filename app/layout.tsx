@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 
 import { BRAND } from "@/lib/brand";
+import { HashSessionListener } from "@/components/auth/hash-session-listener";
 import "./globals.css";
 
 const inter = Inter({
@@ -48,7 +49,10 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className={`${inter.variable} font-sans antialiased`}>{children}</body>
+      <body className={`${inter.variable} font-sans antialiased`}>
+        <HashSessionListener />
+        {children}
+      </body>
     </html>
   );
 }

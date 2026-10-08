@@ -11,11 +11,19 @@ export async function notifyIfPending(userId: string, origin: string) {
   const admin = createAdminClient();
   const { data: profile } = await admin
     .from("profiles")
-    .select("status, notified_at, full_name, email")
+    .select("status, notified_at, full_name, email, school_id")
     .eq("id", userId)
     .single();
 
   if (profile?.status !== "pending" || profile.notified_at) return;
+
+  const { data: settings } = await admin
+    .from("school_settings")
+    .select("notify_admins_on_staff_signup")
+    .eq("school_id", profile.school_id)
+    .maybeSingle();
+
+  if (settings?.notify_admins_on_staff_signup === false) return;
 
   const sent = await notifyAdminsOfPendingStaff(
     { fullName: profile.full_name, email: profile.email },

@@ -7,9 +7,9 @@ import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ResultsSummary } from "./results-summary";
 import { ResultsTable } from "./results-table";
-import type { TermResult } from "@/lib/data/student-results";
+import type { GradeBand, TermResult } from "@/lib/data/student-results";
 
-export function ResultsView({ terms }: { terms: TermResult[] }) {
+export function ResultsView({ terms, bands }: { terms: TermResult[]; bands: GradeBand[] }) {
   const [termId, setTermId] = React.useState(
     terms.find((t) => t.current)?.id ?? terms[0]?.id ?? ""
   );
@@ -64,9 +64,9 @@ export function ResultsView({ terms }: { terms: TermResult[] }) {
         </button>
       </div>
 
-      <ResultsSummary term={term} />
+      <ResultsSummary term={term} bands={bands} />
 
-      <ResultsTable subjects={term.subjects} />
+      <ResultsTable subjects={term.subjects} bands={bands} />
 
       {/* Comments */}
       {(term.classTeacherComment || term.headComment) && (
