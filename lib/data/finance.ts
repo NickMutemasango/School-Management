@@ -6,7 +6,7 @@
  * contract so the invoice table, charts, and fee breakdown keep compiling.
  */
 
-export type PaymentStatus = "paid" | "partial" | "pending" | "overdue";
+export type PaymentStatus = "paid" | "partial" | "pending" | "overdue" | "voided";
 
 export type PaymentMethod =
   | "EcoCash"
@@ -18,6 +18,7 @@ export type PaymentMethod =
 export interface Invoice {
   id: string;
   invoiceNumber: string;
+  studentId: string;
   studentName: string;
   regNumber: string;
   classLevel: string;
@@ -37,16 +38,18 @@ export const paymentStatusLabel: Record<PaymentStatus, string> = {
   partial: "Partial",
   pending: "Pending",
   overdue: "Overdue",
+  voided: "Voided",
 };
 
 export const paymentStatusVariant: Record<
   PaymentStatus,
-  "success" | "info" | "warning" | "danger"
+  "success" | "info" | "warning" | "danger" | "neutral"
 > = {
   paid: "success",
   partial: "info",
   pending: "warning",
   overdue: "danger",
+  voided: "neutral",
 };
 
 /** One row of the fee structure, priced per class band. */
@@ -62,16 +65,29 @@ export interface FeeLine {
 
 export const feeStructure: FeeLine[] = [];
 
+/** Which fee-structure column a class level bills against. */
+export function feeBandForLevel(level: string): keyof Pick<FeeLine, "ecd" | "primary" | "secondary" | "aLevel"> {
+  if (level.startsWith("ECD")) return "ecd";
+  if (level.startsWith("GRADE")) return "primary";
+  if (level === "FORM 5" || level === "FORM 6") return "aLevel";
+  return "secondary";
+}
+
 export interface FinanceSummary {
   totalBilled: number;
   totalCollected: number;
   outstanding: number;
   collectionRate: number;
-  billedDelta: number;
-  collectedDelta: number;
-  outstandingDelta: number;
-  rateDelta: number;
-  /** Human-readable reporting period, e.g. "Term 2, 2026 · May 04 – Aug 22". */
+  /**
+   * Percentage change vs. the previous period. Optional: there's no
+   * previous-period baseline to compare against yet, so real data omits
+   * these rather than fabricate a "0% from last period" claim.
+   */
+  billedDelta?: number;
+  collectedDelta?: number;
+  outstandingDelta?: number;
+  rateDelta?: number;
+  /** Human-readable reporting period, e.g. "Term 2, 2026". */
   period: string;
 }
 

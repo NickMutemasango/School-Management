@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { useActionState } from "react";
+import { AlertCircle, Loader2, Plus, Trash2 } from "lucide-react";
 
 import {
   Dialog,
@@ -24,36 +25,39 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { feeStructure } from "@/lib/data/finance";
-import { students } from "@/lib/data/students";
+import { feeBandForLevel, type FeeLine } from "@/lib/data/finance";
+import type { Student } from "@/lib/data/students";
 import { formatCurrency } from "@/lib/utils";
+import {
+  createInvoice,
+  type CreateInvoiceState,
+} from "@/app/admin/finance/actions";
 
 interface LineItem {
   id: number;
+  category: string;
   description: string;
   amount: number;
 }
 
-export function CreateInvoiceDialog({ children }: { children?: React.ReactNode }) {
+export function CreateInvoiceDialog({
+  students,
+  feeStructure,
+  children,
+}: {
+  students: Student[];
+  feeStructure: FeeLine[];
+  children?: React.ReactNode;
+}) {
   const [open, setOpen] = React.useState(false);
-  const [lines, setLines] = React.useState<LineItem[]>([]);
-
-  const subtotal = lines.reduce((sum, l) => sum + (l.amount || 0), 0);
-
-  function addLine() {
-    setLines((prev) => [
-      ...prev,
-      { id: Math.max(0, ...prev.map((l) => l.id)) + 1, description: "", amount: 0 },
-    ]);
-  }
-
-  function updateLine(id: number, patch: Partial<LineItem>) {
-    setLines((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } : l)));
-  }
-
-  function removeLine(id: number) {
-    setLines((prev) => prev.filter((l) => l.id !== id));
-  }
+  // Remounts the form each time the dialog opens, so a previous attempt's
+  // error/pending state (held by useActionState, which has no external
+  // reset) can't leak into the next one - same convention as
+  // components/student/assignments/submission-dialog.tsx.
+  const [instance, setInstance] = React.useState(0);
+  React.useEffect(() => {
+    if (open) setInstance((n) => n + 1);
+  }, [open]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -66,25 +70,122 @@ export function CreateInvoiceDialog({ children }: { children?: React.ReactNode }
         )}
       </DialogTrigger>
 
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Create Invoice</DialogTitle>
-          <DialogDescription>
-            Bill a student for the selected term. Line items are priced from the
-            fee structure.
-          </DialogDescription>
-        </DialogHeader>
+      <InvoiceForm
+        key={instance}
+        students={students}
+        feeStructure={feeStructure}
+        onOpenChange={setOpen}
+      />
+    </Dialog>
+  );
+}
 
-        <Separator />
+const initialState: CreateInvoiceState = { error: null };
+
+function InvoiceForm({
+  students,
+  feeStructure,
+  onOpenChange,
+}: {
+  students: Student[];
+  feeStructure: FeeLine[];
+  onOpenChange: (open: boolean) => void;
+}) {
+  const [studentId, setStudentId] = React.useState("");
+  const [term, setTerm] = React.useState("");
+  const [issuedOn, setIssuedOn] = React.useState(
+    new Date().toISOString().slice(0, 10),
+  );
+  const [dueOn, setDueOn] = React.useState("");
+  const [lines, setLines] = React.useState<LineItem[]>([]);
+  const [state, formAction, isPending] = useActionState(
+    createInvoice,
+    initialState,
+  );
+  const submittedRef = React.useRef(false);
+
+  React.useEffect(() => {
+    if (!isPending && submittedRef.current && !state.error) {
+      submittedRef.current = false;
+      onOpenChange(false);
+    }
+    // Only re-check when a submission attempt finishes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPending, state.error]);
+
+  const subtotal = lines.reduce((sum, l) => sum + (l.amount || 0), 0);
+  const selectedStudent = students.find((s) => s.id === studentId);
+  const band = selectedStudent
+    ? feeBandForLevel(selectedStudent.classLevel)
+    : null;
+
+  function addLine() {
+    setLines((prev) => [
+      ...prev,
+      {
+        id: Math.max(0, ...prev.map((l) => l.id)) + 1,
+        category: "",
+        description: "",
+        amount: 0,
+      },
+    ]);
+  }
+
+  function updateLine(id: number, patch: Partial<LineItem>) {
+    setLines((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } : l)));
+  }
+
+  function removeLine(id: number) {
+    setLines((prev) => prev.filter((l) => l.id !== id));
+  }
+
+  return (
+    <DialogContent className="max-w-2xl">
+      <DialogHeader>
+        <DialogTitle>Create Invoice</DialogTitle>
+        <DialogDescription>
+          Bill a student for the selected term. Line items are priced from the
+          fee structure.
+        </DialogDescription>
+      </DialogHeader>
+
+      <Separator />
+
+      <form
+        action={formAction}
+        onSubmit={() => {
+          submittedRef.current = true;
+        }}
+        className="space-y-4"
+      >
+        <input type="hidden" name="studentId" value={studentId} />
+        <input type="hidden" name="term" value={term} />
+        <input
+          type="hidden"
+          name="lines"
+          value={JSON.stringify(
+            lines.map(({ category, description, amount }) => ({
+              category,
+              description,
+              amount,
+            })),
+          )}
+        />
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="grid gap-2">
             <Label htmlFor="student">Student</Label>
-            <Select disabled={students.length === 0}>
+            <Select
+              value={studentId}
+              onValueChange={setStudentId}
+              disabled={students.length === 0}
+            >
               <SelectTrigger id="student">
                 <SelectValue
                   placeholder={
-                    students.length === 0 ? "No students available" : "Select student"
+                    students.length === 0
+                      ? "No students available"
+                      : "Select student"
                   }
                 />
               </SelectTrigger>
@@ -100,29 +201,34 @@ export function CreateInvoiceDialog({ children }: { children?: React.ReactNode }
 
           <div className="grid gap-2">
             <Label htmlFor="term">Term</Label>
-            <Select>
+            <Select value={term} onValueChange={setTerm}>
               <SelectTrigger id="term">
                 <SelectValue placeholder="Select term" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="term-1">Term 1</SelectItem>
-                <SelectItem value="term-2">Term 2</SelectItem>
-                <SelectItem value="term-3">Term 3</SelectItem>
+                <SelectItem value="Term 1">Term 1</SelectItem>
+                <SelectItem value="Term 2">Term 2</SelectItem>
+                <SelectItem value="Term 3">Term 3</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <DateSelectField
             id="issuedOn"
+            name="issuedOn"
             label="Issue Date"
-            defaultValue={new Date().toISOString().slice(0, 10)}
+            value={issuedOn}
+            onChange={setIssuedOn}
             minYear={new Date().getFullYear() - 1}
             maxYear={new Date().getFullYear()}
           />
 
           <DateSelectField
             id="dueOn"
+            name="dueOn"
             label="Due Date"
+            value={dueOn}
+            onChange={setDueOn}
             minYear={new Date().getFullYear()}
             maxYear={new Date().getFullYear() + 1}
           />
@@ -144,12 +250,13 @@ export function CreateInvoiceDialog({ children }: { children?: React.ReactNode }
             {lines.map((line) => (
               <div key={line.id} className="flex gap-2">
                 <Select
-                  value={line.description || undefined}
+                  value={line.category || undefined}
                   onValueChange={(v) => {
                     const fee = feeStructure.find((f) => f.category === v);
                     updateLine(line.id, {
-                      description: v,
-                      amount: fee?.secondary ?? line.amount,
+                      category: v,
+                      description: fee?.description ?? "",
+                      amount: fee && band ? fee[band] : line.amount,
                     });
                   }}
                   disabled={feeStructure.length === 0}
@@ -210,16 +317,33 @@ export function CreateInvoiceDialog({ children }: { children?: React.ReactNode }
           </div>
         </div>
 
+        {state.error && (
+          <p className="flex items-center gap-1.5 text-sm font-medium text-destructive">
+            <AlertCircle className="size-4 shrink-0" />
+            {state.error}
+          </p>
+        )}
+
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
             Cancel
           </Button>
-          <Button variant="secondary">Save draft</Button>
-          <Button variant="accent" onClick={() => setOpen(false)}>
+          <Button
+            type="submit"
+            variant="accent"
+            disabled={
+              isPending || !studentId || !term || !dueOn || lines.length === 0
+            }
+          >
+            {isPending && <Loader2 className="size-4 animate-spin" />}
             Issue Invoice
           </Button>
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </form>
+    </DialogContent>
   );
 }
