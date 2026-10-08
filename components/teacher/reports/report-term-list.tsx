@@ -1,10 +1,12 @@
+import Link from "next/link";
 import { CalendarDays, CheckCircle2, Clock } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/shared/empty-state";
+import { levelSlug } from "@/lib/data/class-levels";
 import type { ReportTerm } from "@/lib/data/teacher-reports";
 
-export function ReportTermList({ terms }: { terms: ReportTerm[] }) {
+export function ReportTermList({ level, terms }: { level: string; terms: ReportTerm[] }) {
   if (terms.length === 0) {
     return (
       <div className="bg-background rounded-2xl border border-slate-200 dark:border-slate-800">
@@ -63,12 +65,12 @@ export function ReportTermList({ terms }: { terms: ReportTerm[] }) {
             </div>
           </dl>
 
-          <button
-            type="button"
+          <Link
+            href={`/teacher/reports/${levelSlug(level)}/${term.id}`}
             className="mt-4 inline-flex h-10 items-center rounded-lg bg-blue-50 px-4 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-100 focus-visible:ring-4 focus-visible:ring-blue-500/20 focus-visible:outline-none dark:bg-blue-950/50 dark:text-blue-400 dark:hover:bg-blue-950"
           >
             Continue reports
-          </button>
+          </Link>
         </li>
       ))}
     </ul>

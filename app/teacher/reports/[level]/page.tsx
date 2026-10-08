@@ -5,7 +5,8 @@ import { ArrowLeft } from "lucide-react";
 
 import { ReportTermList } from "@/components/teacher/reports/report-term-list";
 import { CLASS_LEVELS, levelFromSlug, levelSlug } from "@/lib/data/class-levels";
-import { reportClassFor } from "@/lib/data/teacher-reports";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { getReportLevelsForTeacher } from "@/lib/teacher/reports";
 
 interface PageProps {
   params: Promise<{ level: string }>;
@@ -28,9 +29,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function ReportsLevelPage({ params }: PageProps) {
   const { level: slug } = await params;
   const level = levelFromSlug(slug);
-  const cls = level ? reportClassFor(level) : undefined;
+  if (!level) notFound();
 
-  if (!level || !cls) notFound();
+  const user = await getCurrentUser();
+  const levels = user ? await getReportLevelsForTeacher(user.id) : [];
+  const cls = levels.find((c) => c.level === level);
+
+  if (!cls) notFound();
 
   return (
     <>
@@ -48,7 +53,7 @@ export default async function ReportsLevelPage({ params }: PageProps) {
         students in this class).
       </p>
 
-      <ReportTermList terms={cls.terms} />
+      <ReportTermList level={level} terms={cls.terms} />
     </>
   );
 }
