@@ -25,9 +25,9 @@ export default function PendingApprovalPage() {
           Account Pending Approval
         </h1>
         <p className="mb-8 text-slate-600 dark:text-slate-300">
-          Your Google account is signed in, but a portal administrator still
-          needs to approve access before you can enter the staff portal.
-          Check back later, or contact the school office.
+          You&apos;re signed in, but a portal administrator still needs to
+          approve access before you can enter the staff portal. Check back
+          later, or contact the school office.
         </p>
 
         <form action={signOut}>

@@ -3,7 +3,11 @@
 // student/active -> students row), so they behave identically to real
 // enrollments (can log in, show up in class assignment, etc).
 //
-// Run with: node --env-file=.env.local scripts/seed-mock-students.mjs
+// LOCAL SUPABASE ONLY. See scripts/seed-local-dev.mjs for a fuller seed
+// (teachers, classes, timetable) - this one only adds students to whatever
+// classes/levels already exist.
+//
+// Run with: node --env-file=.env.development.local scripts/seed-mock-students.mjs
 import { createClient } from "@supabase/supabase-js";
 import { randomInt } from "crypto";
 
@@ -13,7 +17,20 @@ const emailDomain = process.env.STUDENT_AUTH_EMAIL_DOMAIN;
 
 if (!url || !serviceRoleKey || !emailDomain) {
   console.error(
-    "Missing NEXT_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, or STUDENT_AUTH_EMAIL_DOMAIN - check .env.local."
+    "Missing NEXT_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, or STUDENT_AUTH_EMAIL_DOMAIN.\n" +
+      "Run with: node --env-file=.env.development.local scripts/seed-mock-students.mjs"
+  );
+  process.exit(1);
+}
+
+// This exact script running against production (its old header pointed at
+// .env.local) is almost certainly how prod ended up with the duplicate
+// "Tanaka Moyo" / "Rutendo Chikafu" etc. mock students found during QA -
+// refuse to run anywhere but a local Supabase instance.
+if (!/^https?:\/\/(127\.0\.0\.1|localhost)([:/]|$)/.test(url)) {
+  console.error(
+    `Refusing to run: NEXT_SUPABASE_URL is "${url}", which isn't a local Supabase instance.\n` +
+      "Run with --env-file=.env.development.local, not .env.local (that one points at production)."
   );
   process.exit(1);
 }

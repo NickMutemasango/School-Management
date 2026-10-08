@@ -58,7 +58,7 @@ export function StudentDirectory({ students }: { students: Student[] }) {
       const matchesStatus = status === "all" || s.status === status;
       return matchesQuery && matchesClass && matchesStatus;
     });
-  }, [query, classLevel, status]);
+  }, [students, query, classLevel, status]);
 
   const hasRecords = students.length > 0;
   const isFiltered = query.trim() !== "" || classLevel !== "ALL" || status !== "all";

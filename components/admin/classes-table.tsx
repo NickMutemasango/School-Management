@@ -16,7 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CLASS_LEVELS } from "@/lib/data/class-levels";
 import { SUBJECTS } from "@/lib/data/notes";
 import {
   assignStudentToClass,
@@ -62,9 +61,11 @@ interface ClassesTableProps {
   classes: ClassGroup[];
   teachers: TeacherOption[];
   students: StudentOption[];
+  /** Levels the school has activated (see /admin/levels) - what's offered in the Add Class form. */
+  levels: string[];
 }
 
-export function ClassesTable({ classes, teachers, students }: ClassesTableProps) {
+export function ClassesTable({ classes, teachers, students, levels }: ClassesTableProps) {
   const groupedByLevel = React.useMemo(() => {
     const groups = new Map<string, ClassGroup[]>();
     for (const cls of classes) {
@@ -77,7 +78,7 @@ export function ClassesTable({ classes, teachers, students }: ClassesTableProps)
 
   return (
     <div className="space-y-8">
-      <CreateClassCard />
+      <CreateClassCard levels={levels} />
 
       {classes.length === 0 ? (
         <Card>
@@ -108,50 +109,60 @@ export function ClassesTable({ classes, teachers, students }: ClassesTableProps)
 
 const createClassInitialState: CreateClassState = { error: null };
 
-function CreateClassCard() {
+function CreateClassCard({ levels }: { levels: string[] }) {
   const [state, formAction, isPending] = useActionState(createClass, createClassInitialState);
 
   return (
     <Card>
       <CardHeader className="border-b py-5">
         <CardTitle>Add Class</CardTitle>
-        <CardDescription>Create a new level and section, e.g. "Grade 5" · "A".</CardDescription>
+        <CardDescription>Create a new level and section, e.g. &quot;Grade 5&quot; · &quot;A&quot;.</CardDescription>
       </CardHeader>
       <CardContent className="pt-6">
-        <form action={formAction} className="flex flex-wrap items-end gap-3">
-          <div className="grid gap-2">
-            <Label htmlFor="level">Level</Label>
-            <Select name="level" required>
-              <SelectTrigger id="level" className="w-44">
-                <SelectValue placeholder="Select level" />
-              </SelectTrigger>
-              <SelectContent>
-                {CLASS_LEVELS.map((level) => (
-                  <SelectItem key={level} value={level}>
-                    {level}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        {levels.length === 0 ? (
+          <p className="text-muted-foreground text-sm">
+            No levels activated yet - activate at least one on the{" "}
+            <a href="/admin/levels" className="font-medium underline underline-offset-2">
+              Levels
+            </a>{" "}
+            page before creating a class.
+          </p>
+        ) : (
+          <form action={formAction} className="flex flex-wrap items-end gap-3">
+            <div className="grid gap-2">
+              <Label htmlFor="level">Level</Label>
+              <Select name="level" required>
+                <SelectTrigger id="level" className="w-44">
+                  <SelectValue placeholder="Select level" />
+                </SelectTrigger>
+                <SelectContent>
+                  {levels.map((level) => (
+                    <SelectItem key={level} value={level}>
+                      {level}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="section">Section</Label>
-            <Input id="section" name="section" placeholder="A" required className="w-24" />
-          </div>
+            <div className="grid gap-2">
+              <Label htmlFor="section">Section</Label>
+              <Input id="section" name="section" placeholder="A" required className="w-24" />
+            </div>
 
-          <Button type="submit" disabled={isPending}>
-            {isPending ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
-            Add Class
-          </Button>
+            <Button type="submit" disabled={isPending}>
+              {isPending ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+              Add Class
+            </Button>
 
-          {state.error && (
-            <p className="flex items-center gap-1 text-sm font-medium text-destructive">
-              <AlertCircle className="size-3.5 shrink-0" />
-              {state.error}
-            </p>
-          )}
-        </form>
+            {state.error && (
+              <p className="flex items-center gap-1 text-sm font-medium text-destructive">
+                <AlertCircle className="size-3.5 shrink-0" />
+                {state.error}
+              </p>
+            )}
+          </form>
+        )}
       </CardContent>
     </Card>
   );
