@@ -26,11 +26,13 @@ import {
   RevenueTrendChart,
 } from "@/components/admin/finance-charts";
 import {
-  financeSummary,
   paymentStatusLabel,
   paymentStatusVariant,
-  recentTransactions,
+  type CategorySlice,
+  type RevenuePoint,
+  type Transaction,
 } from "@/lib/data/finance";
+import { createClient } from "@/lib/supabase/server";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -38,12 +40,118 @@ export const metadata: Metadata = {
   description: "Billings, collections, and outstanding fees.",
 };
 
-export default function FinanceOverviewPage() {
+const MONTH_LABELS = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+const CHART_COLORS = [
+  "var(--color-chart-1)",
+  "var(--color-chart-2)",
+  "var(--color-chart-3)",
+  "var(--color-chart-4)",
+  "var(--color-chart-5)",
+];
+
+export default async function FinanceOverviewPage() {
+  const supabase = await createClient();
+
+  const [{ data: invoiceRows }, { data: lineItemRows }, { data: paymentRows }] = await Promise.all([
+    supabase.from("invoices").select("id, amount, term, issued_on, voided_at"),
+    supabase.from("invoice_line_items").select("invoice_id, category, amount"),
+    supabase
+      .from("payments")
+      .select("id, invoice_id, amount, method, reference, paid_on, students(first_name, last_name)")
+      .order("paid_on", { ascending: false }),
+  ]);
+
+  const billedInvoices = (invoiceRows ?? []).filter((i) => i.voided_at === null);
+  const billedInvoiceIds = new Set(billedInvoices.map((i) => i.id));
+
+  const totalBilled = billedInvoices.reduce((sum, i) => sum + Number(i.amount), 0);
+
+  const validPayments = (paymentRows ?? []).filter((p) => billedInvoiceIds.has(p.invoice_id));
+  const totalCollected = validPayments.reduce((sum, p) => sum + Number(p.amount), 0);
+  const outstanding = totalBilled - totalCollected;
+  const collectionRate = totalBilled > 0 ? Math.round((totalCollected / totalBilled) * 100) : 0;
+
+  const mostRecent = [...billedInvoices].sort((a, b) => (a.issued_on < b.issued_on ? 1 : -1))[0];
+  const period = mostRecent
+    ? `${mostRecent.term}, ${new Date(mostRecent.issued_on).getFullYear()}`
+    : "No invoices issued yet";
+
+  // Billings by month (from issued_on) and collections by month (from
+  // paid_on), current calendar year only. Months with no activity are
+  // dropped rather than charted as zero, so the chart's own empty state
+  // handles "no data yet" instead of a flat zero line.
+  const year = new Date().getFullYear();
+  const billedByMonth = new Array(12).fill(0);
+  const collectedByMonth = new Array(12).fill(0);
+  for (const inv of billedInvoices) {
+    const d = new Date(inv.issued_on);
+    if (d.getFullYear() === year) billedByMonth[d.getMonth()] += Number(inv.amount);
+  }
+  for (const p of validPayments) {
+    const d = new Date(p.paid_on);
+    if (d.getFullYear() === year) collectedByMonth[d.getMonth()] += Number(p.amount);
+  }
+  const revenueTrend: RevenuePoint[] = MONTH_LABELS.map((month, i) => ({
+    month,
+    billed: Math.round(billedByMonth[i] * 100) / 100,
+    collected: Math.round(collectedByMonth[i] * 100) / 100,
+  })).filter((p) => p.billed > 0 || p.collected > 0);
+
+  // Revenue by category: each payment is prorated across its invoice's line
+  // items by their share of the invoice total, so a partial payment against
+  // a multi-line invoice still splits sensibly across categories.
+  const lineItemsByInvoice = new Map<string, { category: string; amount: number }[]>();
+  for (const l of lineItemRows ?? []) {
+    const list = lineItemsByInvoice.get(l.invoice_id) ?? [];
+    list.push({ category: l.category, amount: Number(l.amount) });
+    lineItemsByInvoice.set(l.invoice_id, list);
+  }
+  const invoiceAmount = new Map(billedInvoices.map((i) => [i.id, Number(i.amount)]));
+  const categoryTotals = new Map<string, number>();
+  for (const p of validPayments) {
+    const lines = lineItemsByInvoice.get(p.invoice_id);
+    const invoiceTotal = invoiceAmount.get(p.invoice_id);
+    if (!lines || !invoiceTotal) continue;
+    for (const line of lines) {
+      const share = (line.amount / invoiceTotal) * Number(p.amount);
+      categoryTotals.set(line.category, (categoryTotals.get(line.category) ?? 0) + share);
+    }
+  }
+  const revenueByCategory: CategorySlice[] = Array.from(categoryTotals.entries()).map(
+    ([name, value], i) => ({
+      name,
+      value: Math.round(value * 100) / 100,
+      fill: CHART_COLORS[i % CHART_COLORS.length],
+    })
+  );
+
+  const recentTransactions: Transaction[] = validPayments.slice(0, 8).map((row) => {
+    const student = (Array.isArray(row.students) ? row.students[0] : row.students) as {
+      first_name: string;
+      last_name: string;
+    } | null;
+    return {
+      id: row.id,
+      reference: row.reference,
+      studentName: student ? `${student.last_name}, ${student.first_name}` : "—",
+      method: row.method,
+      amount: Number(row.amount),
+      recordedOn: row.paid_on,
+      // A payment only exists here because an admin already recorded it as
+      // received - there's no "pending/failed" transaction state to track.
+      status: "paid",
+    };
+  });
+
   return (
     <>
       <PageHeader
         title="Finance Overview"
-        description={financeSummary.period}
+        description={period}
         actions={
           <>
             <Button variant="outline" asChild>
@@ -63,44 +171,40 @@ export default function FinanceOverviewPage() {
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Total Billed"
-          value={formatCurrency(financeSummary.totalBilled)}
-          caption="Invoices issued this term"
+          value={formatCurrency(totalBilled)}
+          caption="Invoices issued"
           icon={Receipt}
           tone="blue"
-          delta={financeSummary.billedDelta}
         />
         <StatCard
           label="Collected"
-          value={formatCurrency(financeSummary.totalCollected)}
+          value={formatCurrency(totalCollected)}
           caption="Payments received"
           icon={Banknote}
           tone="emerald"
-          delta={financeSummary.collectedDelta}
         />
         <StatCard
           label="Outstanding"
-          value={formatCurrency(financeSummary.outstanding)}
+          value={formatCurrency(outstanding)}
           caption="Awaiting settlement"
           icon={PiggyBank}
           tone="rose"
-          delta={financeSummary.outstandingDelta}
         />
         <StatCard
           label="Collection Rate"
-          value={`${financeSummary.collectionRate}%`}
+          value={`${collectionRate}%`}
           caption="Collected over billed"
           icon={TrendingUp}
           tone="amber"
-          delta={financeSummary.rateDelta}
         />
       </div>
 
       {/* Charts */}
       <div className="mt-8 grid gap-5 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <RevenueTrendChart />
+          <RevenueTrendChart data={revenueTrend} />
         </div>
-        <RevenueByCategoryChart />
+        <RevenueByCategoryChart data={revenueByCategory} />
       </div>
 
       {/* Recent transactions */}
