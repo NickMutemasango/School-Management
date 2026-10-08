@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { PageHeader } from "@/components/shared/page-header";
 import { ResultsView } from "@/components/student/results/results-view";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { getGradeBands } from "@/lib/admin/grade-bands";
 import { getResultsForStudent } from "@/lib/students/results";
 
 export const metadata: Metadata = {
@@ -12,7 +13,10 @@ export const metadata: Metadata = {
 
 export default async function StudentResultsPage() {
   const user = await getCurrentUser();
-  const termResults = user ? await getResultsForStudent(user.id) : [];
+  const [termResults, bands] = await Promise.all([
+    user ? getResultsForStudent(user.id) : Promise.resolve([]),
+    getGradeBands(),
+  ]);
 
   return (
     <>
@@ -20,7 +24,7 @@ export default async function StudentResultsPage() {
         title="Results"
         description="Term results and progress across every subject."
       />
-      <ResultsView terms={termResults} />
+      <ResultsView terms={termResults} bands={bands} />
     </>
   );
 }

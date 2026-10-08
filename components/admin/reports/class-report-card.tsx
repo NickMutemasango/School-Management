@@ -7,11 +7,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { isPass } from "@/lib/data/student-results";
+import { isPass, type GradeBand } from "@/lib/data/student-results";
 import { cn } from "@/lib/utils";
 import type { AdminClassReport } from "@/lib/admin/reports";
 
-export function ClassReportCard({ report }: { report: AdminClassReport }) {
+export function ClassReportCard({ report, bands }: { report: AdminClassReport; bands: GradeBand[] }) {
   return (
     <Card className="overflow-hidden py-0">
       <CardHeader className="border-b py-5">
@@ -54,7 +54,7 @@ export function ClassReportCard({ report }: { report: AdminClassReport }) {
                       "text-right font-medium tabular-nums",
                       s.mark === null
                         ? "text-muted-foreground"
-                        : isPass(s.mark)
+                        : isPass(s.mark, bands)
                           ? "text-emerald-600"
                           : "text-rose-600"
                     )}

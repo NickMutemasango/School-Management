@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { levelFromSlug, levelSlug } from "@/lib/data/class-levels";
 import { termFromSlug, currentAcademicYear } from "@/lib/data/terms";
 import { getTermReportsForLevel } from "@/lib/admin/reports";
+import { getGradeBands } from "@/lib/admin/grade-bands";
 
 interface PageProps {
   params: Promise<{ level: string; term: string }>;
@@ -30,7 +31,10 @@ export default async function AdminTermReportsPage({ params }: PageProps) {
   if (!level || !term) notFound();
 
   const academicYear = currentAcademicYear();
-  const reports = await getTermReportsForLevel(level, term, academicYear);
+  const [reports, bands] = await Promise.all([
+    getTermReportsForLevel(level, term, academicYear),
+    getGradeBands(),
+  ]);
   if (reports.length === 0) notFound();
 
   return (
@@ -52,7 +56,7 @@ export default async function AdminTermReportsPage({ params }: PageProps) {
 
       <div className="space-y-6">
         {reports.map((report) => (
-          <ClassReportCard key={report.classId} report={report} />
+          <ClassReportCard key={report.classId} report={report} bands={bands} />
         ))}
 
         {reports.every((r) => r.students.length === 0) && (

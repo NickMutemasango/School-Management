@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { CLASS_LEVELS } from "@/lib/data/class-levels";
 import { TERM_LABELS, currentAcademicYear, currentTerm } from "@/lib/data/terms";
 import { gradeForMark, isPass, type Grade } from "@/lib/data/student-results";
+import { getGradeBands } from "@/lib/admin/grade-bands";
 
 export interface EnrollmentByLevel {
   level: string;
@@ -126,13 +127,14 @@ export async function getAcademicAnalytics(): Promise<AcademicAnalytics> {
   const term = currentTerm();
   const academicYear = currentAcademicYear();
 
-  const [{ data: classesData }, { data: resultsData }] = await Promise.all([
+  const [{ data: classesData }, { data: resultsData }, bands] = await Promise.all([
     supabase.from("classes").select("id, level"),
     supabase
       .from("subject_results")
       .select("mark, class_teacher_subjects(class_id)")
       .eq("term", term)
       .eq("academic_year", academicYear),
+    getGradeBands(),
   ]);
 
   const levelByClass = new Map((classesData ?? []).map((c) => [c.id, c.level]));
@@ -162,14 +164,14 @@ export async function getAcademicAnalytics(): Promise<AcademicAnalytics> {
 
   const gradeCounts = new Map<Grade, number>();
   for (const mark of allMarks) {
-    const grade = gradeForMark(mark);
+    const grade = gradeForMark(mark, bands);
     gradeCounts.set(grade, (gradeCounts.get(grade) ?? 0) + 1);
   }
   const gradeDistribution: GradeDistributionSlice[] = (["A", "B", "C", "D", "E", "U"] as Grade[])
     .map((grade) => ({ grade, count: gradeCounts.get(grade) ?? 0 }))
     .filter((d) => d.count > 0);
 
-  const passCount = allMarks.filter((m) => isPass(m)).length;
+  const passCount = allMarks.filter((m) => isPass(m, bands)).length;
 
   return {
     term,
