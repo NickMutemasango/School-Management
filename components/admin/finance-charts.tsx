@@ -27,12 +27,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { EmptyState } from "@/components/shared/empty-state";
-import { revenueByCategory, revenueTrend } from "@/lib/data/finance";
+import type { CategorySlice, RevenuePoint } from "@/lib/data/finance";
 import { formatCurrency } from "@/lib/utils";
 
 type ChartKind = "area" | "bar";
 
-export function RevenueTrendChart() {
+export function RevenueTrendChart({ data: revenueTrend }: { data: RevenuePoint[] }) {
   const [kind, setKind] = React.useState<ChartKind>("area");
   const hasData = revenueTrend.length > 0;
 
@@ -135,7 +135,7 @@ export function RevenueTrendChart() {
   );
 }
 
-export function RevenueByCategoryChart() {
+export function RevenueByCategoryChart({ data: revenueByCategory }: { data: CategorySlice[] }) {
   const total = revenueByCategory.reduce((sum, d) => sum + d.value, 0);
   const hasData = revenueByCategory.length > 0 && total > 0;
 

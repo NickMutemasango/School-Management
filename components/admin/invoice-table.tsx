@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import { Download, MoreHorizontal, Search } from "lucide-react";
@@ -30,12 +30,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { CreateInvoiceDialog } from "./create-invoice-dialog";
+import { RecordPaymentDialog } from "./record-payment-dialog";
 import {
-  invoices,
   paymentStatusLabel,
   paymentStatusVariant,
+  type FeeLine,
+  type Invoice,
   type PaymentStatus,
 } from "@/lib/data/finance";
+import type { Student } from "@/lib/data/students";
+import { unvoidInvoice, voidInvoice } from "@/app/admin/finance/actions";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 
 const STATUS_OPTIONS: Array<{ value: PaymentStatus | "all"; label: string }> = [
@@ -44,11 +48,21 @@ const STATUS_OPTIONS: Array<{ value: PaymentStatus | "all"; label: string }> = [
   { value: "partial", label: "Partial" },
   { value: "pending", label: "Pending" },
   { value: "overdue", label: "Overdue" },
+  { value: "voided", label: "Voided" },
 ];
 
-export function InvoiceTable() {
+interface InvoiceTableProps {
+  invoices: Invoice[];
+  students: Student[];
+  feeStructure: FeeLine[];
+}
+
+export function InvoiceTable({ invoices, students, feeStructure }: InvoiceTableProps) {
   const [query, setQuery] = React.useState("");
   const [status, setStatus] = React.useState<PaymentStatus | "all">("all");
+  const [payingInvoice, setPayingInvoice] = React.useState<Invoice | null>(null);
+  const [isPending, startTransition] = React.useTransition();
+  const [voidError, setVoidError] = React.useState<string | null>(null);
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -61,7 +75,7 @@ export function InvoiceTable() {
       const matchesStatus = status === "all" || inv.status === status;
       return matchesQuery && matchesStatus;
     });
-  }, [query, status]);
+  }, [invoices, query, status]);
 
   const totals = React.useMemo(
     () => ({
@@ -70,6 +84,28 @@ export function InvoiceTable() {
     }),
     [filtered]
   );
+
+  function handleVoid(invoiceId: string) {
+    startTransition(async () => {
+      try {
+        await voidInvoice(invoiceId);
+        setVoidError(null);
+      } catch (err) {
+        setVoidError(err instanceof Error ? err.message : "Something went wrong.");
+      }
+    });
+  }
+
+  function handleUnvoid(invoiceId: string) {
+    startTransition(async () => {
+      try {
+        await unvoidInvoice(invoiceId);
+        setVoidError(null);
+      } catch (err) {
+        setVoidError(err instanceof Error ? err.message : "Something went wrong.");
+      }
+    });
+  }
 
   return (
     <>
@@ -106,9 +142,13 @@ export function InvoiceTable() {
             <span className="hidden sm:inline">Export</span>
           </Button>
 
-          <CreateInvoiceDialog />
+          <CreateInvoiceDialog students={students} feeStructure={feeStructure} />
         </div>
       </div>
+
+      {voidError && (
+        <p className="mb-3 text-sm font-medium text-destructive">{voidError}</p>
+      )}
 
       <Card className="overflow-hidden py-0">
         <Table>
@@ -128,6 +168,7 @@ export function InvoiceTable() {
           <TableBody>
             {filtered.map((inv) => {
               const balance = inv.amount - inv.amountPaid;
+              const voided = inv.status === "voided";
               return (
                 <TableRow key={inv.id}>
                   <TableCell className="pl-6">
@@ -165,7 +206,7 @@ export function InvoiceTable() {
                   <TableCell
                     className={cn(
                       "text-right font-medium tabular-nums",
-                      balance > 0 ? "text-rose-600" : "text-emerald-600"
+                      balance > 0 && !voided ? "text-rose-600" : "text-emerald-600"
                     )}
                   >
                     {formatCurrency(balance)}
@@ -184,13 +225,26 @@ export function InvoiceTable() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>View invoice</DropdownMenuItem>
-                        <DropdownMenuItem>Record payment</DropdownMenuItem>
-                        <DropdownMenuItem>Send reminder</DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem variant="destructive">
-                          Void invoice
+                        <DropdownMenuItem
+                          disabled={voided || balance <= 0}
+                          onClick={() => setPayingInvoice(inv)}
+                        >
+                          Record payment
                         </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        {voided ? (
+                          <DropdownMenuItem disabled={isPending} onClick={() => handleUnvoid(inv.id)}>
+                            Unvoid invoice
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem
+                            variant="destructive"
+                            disabled={isPending}
+                            onClick={() => handleVoid(inv.id)}
+                          >
+                            Void invoice
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -235,6 +289,13 @@ export function InvoiceTable() {
           </span>
         </span>
       </div>
+
+      <RecordPaymentDialog
+        invoice={payingInvoice}
+        onOpenChange={(open) => {
+          if (!open) setPayingInvoice(null);
+        }}
+      />
     </>
   );
 }

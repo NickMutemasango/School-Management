@@ -6,12 +6,13 @@ import { createClient } from "@/lib/supabase/server";
  * student_class_memberships) have no write RLS policies - service-role
  * mutations against them rely entirely on this check.
  *
- * Returns the admin's school_id so callers that need to scope a
- * service-role write to the admin's own school (e.g. level configuration)
- * don't have to run a second lookup - existing callers that only awaited
- * this for its side effect are unaffected.
+ * Returns the admin's school_id and id so callers that need to scope a
+ * service-role write to the admin's own school (e.g. level configuration) or
+ * attribute it to them (e.g. payments.recorded_by) don't have to run a
+ * second lookup - existing callers that only awaited this for its side
+ * effect are unaffected.
  */
-export async function requireActiveAdmin(): Promise<{ schoolId: string }> {
+export async function requireActiveAdmin(): Promise<{ schoolId: string; adminId: string }> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -28,5 +29,5 @@ export async function requireActiveAdmin(): Promise<{ schoolId: string }> {
     throw new Error("Only an active admin can do this.");
   }
 
-  return { schoolId: profile.school_id };
+  return { schoolId: profile.school_id, adminId: user.id };
 }
