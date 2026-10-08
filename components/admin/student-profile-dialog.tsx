@@ -1,9 +1,11 @@
 ﻿"use client";
 
 import * as React from "react";
+import { useActionState } from "react";
 import {
   AlertCircle,
   CalendarDays,
+  CheckCircle2,
   ChevronDown,
   Home,
   Loader2,
@@ -11,6 +13,7 @@ import {
   Phone,
   ShieldCheck,
   TrendingUp,
+  UserPlus,
   Wallet,
 } from "lucide-react";
 
@@ -33,8 +36,10 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   deregisterStudent,
+  inviteGuardian,
   reinstateStudent,
   suspendStudent,
+  type InviteGuardianState,
 } from "@/app/admin/students/actions";
 import {
   enrollmentStatusLabel,
@@ -159,6 +164,7 @@ export function StudentProfileDialog({
               <DetailRow icon={Phone} label="Phone" value={student.guardianPhone} />
               <DetailRow icon={Mail} label="Email" value={student.guardianEmail} />
             </dl>
+            <InviteGuardianButton studentId={student.id} />
           </section>
         </div>
 
@@ -253,5 +259,33 @@ function DetailRow({
         <dd className="text-sm font-medium break-words">{value}</dd>
       </div>
     </div>
+  );
+}
+
+const inviteInitialState: InviteGuardianState = { error: null, success: false };
+
+function InviteGuardianButton({ studentId }: { studentId: string }) {
+  const [state, formAction, isPending] = useActionState(inviteGuardian, inviteInitialState);
+
+  return (
+    <form action={formAction} className="mt-4">
+      <input type="hidden" name="studentId" value={studentId} />
+      <Button type="submit" variant="outline" size="sm" disabled={isPending || state.success}>
+        {isPending ? (
+          <Loader2 className="size-4 animate-spin" />
+        ) : state.success ? (
+          <CheckCircle2 className="size-4" />
+        ) : (
+          <UserPlus className="size-4" />
+        )}
+        {state.success ? "Invite Sent" : "Invite Guardian"}
+      </Button>
+      {state.error && (
+        <p className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-destructive">
+          <AlertCircle className="size-3.5 shrink-0" />
+          {state.error}
+        </p>
+      )}
+    </form>
   );
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Briefcase, ChevronRight, GraduationCap, Shield } from "lucide-react";
+import { Briefcase, ChevronRight, GraduationCap, Shield, Users } from "lucide-react";
 
 import { BRAND, WORDMARK_CLASS } from "@/lib/brand";
 
@@ -21,6 +21,12 @@ const ROLES = [
     icon: Briefcase,
     title: "Staff",
     description: "Administration, finance, and teaching portals",
+  },
+  {
+    href: "/login/parent",
+    icon: Users,
+    title: "Guardian",
+    description: "Your child's results, fees, and class notes",
   },
 ] as const;
 
