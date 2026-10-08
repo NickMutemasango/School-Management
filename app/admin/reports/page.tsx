@@ -1,19 +1,24 @@
 import type { Metadata } from "next";
-import { FileText as PageIcon } from "lucide-react";
 
-import { ModulePlaceholder } from "@/components/shared/module-placeholder";
+import { PageHeader } from "@/components/shared/page-header";
+import { ReportLevelList } from "@/components/admin/reports/report-level-list";
+import { getReportLevelsForAdmin } from "@/lib/admin/reports";
 
 export const metadata: Metadata = {
   title: "Reports · Administration",
-  description: "Generated reports across the portal.",
+  description: "Browse end-of-term reports across every class.",
 };
 
-export default function ReportsPage() {
+export default async function ReportsPage() {
+  const levels = await getReportLevelsForAdmin();
+
   return (
-    <ModulePlaceholder
-      icon={PageIcon}
-      title="Reports"
-      description="Generate and export institutional reports."
-    />
+    <>
+      <PageHeader
+        title="Reports"
+        description="Browse end-of-term reports across every class."
+      />
+      <ReportLevelList levels={levels} />
+    </>
   );
 }
